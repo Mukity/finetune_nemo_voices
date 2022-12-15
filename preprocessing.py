@@ -151,7 +151,7 @@ class AudioPreprocessing(object):
         self.save_list_to_file(train_manifest, train_dataset, manifest_folder)
         self.save_list_to_file(val_manifest, val_dataset, manifest_folder)
         self.save_list_to_file(manifest, manifest_filename, manifest_folder)
-        return min_duration, max_duration, train_dataset, val_dataset
+        return min_duration, max_duration, f'{manifest_folder}/{train_dataset}', f'{manifest_folder}/{val_dataset}'
     
     def save_list_to_file(self, json_list: list, filename: str, manifest_folder: str=None):
         manifest_folder = manifest_folder or self.manifest_folder

@@ -9,6 +9,12 @@ logger = preprocessing.logger
 if not os.path.exists('conf'):
     os.mkdir('conf')
 
+if not os.path.exists('fastpitch_finetune.py'):
+    wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/fastpitch_finetune.py')
+
+if not os.path.exists('hifigan_finetune.py'):
+    wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/hifigan_finetune.py')
+
 if not os.path.isfile('conf/fastpitch_align_v1.05.yaml'):
     wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/conf/fastpitch_align_v1.05.yaml', out='conf')
 
@@ -19,7 +25,8 @@ if not os.path.isfile('tts_dataset_files/heteronyms-052722'):
     wget.download(f'https://raw.githubusercontent.com/NVIDIA/NeMo/main/scripts/tts_dataset_files/heteronyms-052722', out='tts_dataset_files')
 
 def update_fastpitch(
-    preprocessing_dict=preprocessing.run_vd('vd_manifest.json', f'vd_sup_data'),
+    exp_dir,
+    preprocessing_dict,#=preprocessing.run_vd('vd_manifest.json', f'vd_sup_data'),
     phoneme_dict_path='tts_dataset_files/cmudict-0.7b_nv22.10',
     heteronyms_path='tts_dataset_files/heteronyms-052722',
     whitelist_path = preprocessing.normalizer['whitelist'],
@@ -128,6 +135,8 @@ def update_fastpitch(
         fastpitch_cfg.trainer.devices = 1
         fastpitch_cfg.trainer.strategy = None if fastpitch_cfg.trainer.devices >1 else fastpitch_cfg.trainer.strategy
 
+        fastpitch_cfg.exp_manager.exp_dir = exp_dir
+
         if defaults:
             fastpitch_cfg.trainer.num_sanity_val_steps = 2
             fastpitch_cfg.model.optim.name = 'adamw',
@@ -146,7 +155,6 @@ def update_fastpitch(
     logger.info(f'file path is: {fname}')
     return fname
 
-
 if __name__ == '__main__':
     a = {'sample_rate': 48000.0, 'pitch_mean': 173.52857971191406, 'pitch_std': 39.51873016357422, 'pitch_fmin': 94.1154556274414, 'pitch_fmax': 323.9647521972656, 'min_duration': 0.48, 'max_duration': 7.44, 'sup_data_path': 'vd_sup_data', 'train_dataset': 'vd_manifest_train.json', 'validation_datasets': 'vd_manifest_val.json'}
-    update_fastpitch(preprocessing_dict=a, defaults=True)
+    update_fastpitch(exp_dir='sample_data', preprocessing_dict=a)
