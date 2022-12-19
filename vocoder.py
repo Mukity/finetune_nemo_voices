@@ -10,7 +10,7 @@ import torch
 import pytorch_lightning as pl
 
 from nemo.collections.tts.torch.helpers import BetaBinomialInterpolator
-from nemo.collections.tts.models.base import SpectrogramGenerator
+from nemo.collections.tts.models import FastPitchModel
 from nemo.collections.tts.models import HifiGanModel
 from nemo.utils.exp_manager import exp_manager
 
@@ -34,9 +34,9 @@ class VocoderConfigPreprocessing:
         self.out = {}
 
         if from_file:
-            self.spec_model = SpectrogramGenerator.restore_from(spec_model)
+            self.spec_model = FastPitchModel.restore_from(spec_model)
         else:
-            self.spec_model = SpectrogramGenerator.load_from_checkpoint(spec_model)
+            self.spec_model = FastPitchModel.load_from_checkpoint(spec_model)
     
     def _load_wav(self, audio_file):
         with sf.SoundFile(audio_file, 'r') as f:
