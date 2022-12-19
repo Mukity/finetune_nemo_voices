@@ -100,11 +100,12 @@ def modify_config(
         
         sc.train_dataset = train_dataset
         sc.validation_datasets = validation_datasets
-        sc.sup_data_path = pitch_dict['sup_data_path']
-        sc.pitch_fmin = pitch_dict['pitch_fmin']
-        sc.pitch_fmax = pitch_dict['pitch_fmax']
-        sc.pitch_mean = pitch_dict['pitch_mean']
-        sc.pitch_std = pitch_dict['pitch_std']
+        if specgen:
+            sc.sup_data_path = pitch_dict['sup_data_path']
+            sc.pitch_fmin = pitch_dict['pitch_fmin']
+            sc.pitch_fmax = pitch_dict['pitch_fmax']
+            sc.pitch_mean = pitch_dict['pitch_mean']
+            sc.pitch_std = pitch_dict['pitch_std']
         sc.sample_rate = pitch_dict['sample_rate']
 
         sc.phoneme_dict_path = f"tts_dataset_files/{phoneme_dict_path}"
@@ -128,8 +129,11 @@ def modify_config(
         if not specgen:
             sc.model.train_ds.dataset.manifest_filepath = train_dataset
             sc.model.validation_ds.dataset.manifest_filepath = validation_datasets
-            sc.model.validation_ds.dataset._target_ = "nemo.collections.tts.torch.data.VocoderDataset"
             sc.model.train_ds.dataset._target_ = "nemo.collections.tts.torch.data.VocoderDataset"
+            sc.model.validation_ds.dataset._target_ = "nemo.collections.tts.torch.data.VocoderDataset"
+            sc.model.train_ds.dataset._target_['sample_rate'] = pitch_dict['sample_rate']
+            sc.model.validation_ds.dataset._target_['sample_rate'] = pitch_dict['sample_rate']
+            
         
         sc.model.train_ds.dataset.update(mdl_train_dataset)
         sc.model.train_ds.dataloader_params.update(mdl_train_dataloader)
