@@ -109,7 +109,7 @@ def modify_config(
 
         sc.phoneme_dict_path = f"tts_dataset_files{phoneme_dict_path}"
         sc.heteronyms_path = f"tts_dataset_files{heteronyms_path}"
-        sc.whitelist_path = f"tts_dataset_files{whitelist_path}"
+        sc.whitelist_path = whitelist_path
 
         #sc.model.text_normalizer_call_kwargs
         #sc.model.text_normalizer
