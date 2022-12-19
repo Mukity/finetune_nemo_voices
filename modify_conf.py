@@ -128,6 +128,8 @@ def modify_config(
         if not specgen:
             sc.model.train_ds.dataset.manifest_filepath = train_dataset
             sc.model.validation_ds.dataset.manifest_filepath = validation_datasets
+            sc.model.validation_ds.dataset.__target__ = "nemo.tts.collections.torch.data.VocoderDataset"
+            sc.model.train_ds.dataset.__target__ = "nemo.tts.collections.torch.data.VocoderDataset"
         
         sc.model.train_ds.dataset.update(mdl_train_dataset)
         sc.model.train_ds.dataloader_params.update(mdl_train_dataloader)
