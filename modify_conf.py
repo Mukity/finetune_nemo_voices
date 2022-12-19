@@ -131,8 +131,8 @@ def modify_config(
             sc.model.validation_ds.dataset.manifest_filepath = validation_datasets
             sc.model.train_ds.dataset._target_ = "nemo.collections.tts.torch.data.VocoderDataset"
             sc.model.validation_ds.dataset._target_ = "nemo.collections.tts.torch.data.VocoderDataset"
-            sc.model.train_ds.dataset._target_.sample_rate = pitch_dict['sample_rate']
-            sc.model.validation_ds.dataset._target_.sample_rate = pitch_dict['sample_rate']
+            sc.model.train_ds.dataset.sample_rate = pitch_dict['sample_rate']
+            sc.model.validation_ds.dataset.sample_rate = pitch_dict['sample_rate']
             
         
         sc.model.train_ds.dataset.update(mdl_train_dataset)
