@@ -223,7 +223,7 @@ def run(
     whitelist_path = sgp.normalizer['whitelist']
 
     cfg = modify_config(train_dataset, validation_datasets, pitch_dict, config_name, phoneme_dict_path,
-                    heteronyms_path, whitelist_path, conf_path, **kwargs)
+            heteronyms_path, whitelist_path, conf_path, **kwargs)
     finetuning(cfg)
 
 def argparser():

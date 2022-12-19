@@ -10,29 +10,33 @@ import torch
 import pytorch_lightning as pl
 
 from nemo.collections.tts.torch.helpers import BetaBinomialInterpolator
-from nemo.collections.tts.models.base import SpectrogramGenerator as specgen
+from nemo.collections.tts.models.base import SpectrogramGenerator
 from nemo.collections.tts.models import HifiGanModel
 from nemo.utils.exp_manager import exp_manager
 
 from pathlib import Path
+from modify_conf import modify_config
+
+if not os.path.exists('conf'):
+    os.mkdir('conf')
 
 if not os.path.isfile('conf/hifigan.yaml'):
     wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/conf/hifigan/hifigan.yaml', out='conf')
 
-
 class VocoderConfigPreprocessing:    
-    def __init__(self, manifest_name: str, spec_model, manifest_folder: str=None, from_file=True):
+    def __init__(self, manifest_name: str, spec_model: str, manifest_folder: str=None, from_file=True):
         self.manifest_folder = manifest_folder or "manifests"
         self.manifest_name = manifest_name
 
         manifests = ['train', 'val']
         self.manifest_names = [f"{self.manifest_name}_{m}.json" for m in manifests]
         self.manifest_paths = [f"{self.manifest_folder}/{f}" for f in self.manifest_names]
+        self.out = {}
 
         if from_file:
-            self.spec_model = specgen.restore_from(spec_model)
+            self.spec_model = SpectrogramGenerator.restore_from(spec_model)
         else:
-            self.spec_model = specgen.load_from_checkpoint(spec_model)
+            self.spec_model = SpectrogramGenerator.load_from_checkpoint(spec_model)
     
     def _load_wav(self, audio_file):
         with sf.SoundFile(audio_file, 'r') as f:
@@ -46,7 +50,11 @@ class VocoderConfigPreprocessing:
 
         assert isinstance(manifest_names, list), "manifest_names must be a list"
         for manifest_filename in manifest_names:
-            self.make_manifest(spec_model, manifest_filename, manifest_folder)
+            manifest_modified = self.make_manifest(spec_model, manifest_filename, manifest_folder)
+            if "train" in manifest_modified:
+                self.out["train_dataset"] = manifest_modified
+            elif "val" in manifest_modified:
+                self.out["val_dataset"] = manifest_modified
     
     def make_manifest(self, spec_model: str, manifest_filename: str, manifest_folder: str=None):
         manifest_folder = manifest_folder or self.manifest_folder
@@ -91,10 +99,29 @@ class VocoderConfigPreprocessing:
                 np.save(save_path, spectrogram[0].to('cpu').numpy())
                 r["mel_filepath"] = str(save_path)
         
-        with open(f"{manifest_path.split('/')[0]}/vocoder_{manifest_path.split('/')[1]}", "w") as f:
+        manifest_modified = f"{manifest_folder}/voc_{manifest_filename}"
+        with open(manifest_modified, "w") as f:
             for r in records:
                 f.write(json.dumps(r) + '\n')
+        return manifest_modified
 
+def finetuning(cfg):
+    trainer = pl.Trainer(**cfg.trainer)
+    exp_manager(trainer, cfg.get("exp_manager", None))
+    model = HifiGanModel(cfg=cfg.model, trainer=trainer)
+    model.maybe_init_from_pretrained_checkpoint(cfg=cfg)
+    trainer.fit(model)
+
+def run(manifest_name, spec_model, manifest_folder, pretrained, conf_name, conf_path, pitch_file, **kwargs):
+    vc = VocoderConfigPreprocessing(manifest_name, spec_model, manifest_folder, pretrained)
+    vc.make_manifests()
+
+    train_dataset = vc.out['train_dataset']
+    validation_datasets = vc.out['val_dataset']
+    with open(pitch_file) as f:
+        pitch_dict = json.load(f)
+    cfg = modify_config(train_dataset, validation_datasets, pitch_dict, conf_name, conf_path=conf_path, specgen=False,**kwargs)
+    finetuning(cfg)
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -105,19 +132,28 @@ def argparser():
     parser.add_argument('-manifest_folder', type=str, required=False)
     parser.add_argument('-ckpt_spec_model', type=str, required=False)
     parser.add_argument('-nemo_spec_model', type=str, required=False)
+    parser.add_argument('-config_path', type=str)
+    parser.add_argument('-config_name', type=str)
+    parser.add_argument('-pitch_file', type=str)
+
+    parser.add_argument('-model_params', type=json.loads)
+    parser.add_argument('-model_train_dataset', type=json.loads)
+    parser.add_argument('-model_train_dataloader', type=json.loads)
+    parser.add_argument('-model_val_dataset', type=json.loads)
+    parser.add_argument('-model_val_dataloader', type=json.loads)
+    parser.add_argument('-preprocessor', type=json.loads)
+    parser.add_argument('-optim', type=json.loads)
+    parser.add_argument('-trainer', type=json.loads)
+    parser.add_argument('-exp_manager', type=json.loads)
+    parser.add_argument('-generator', type=json.loads)
+    parser.add_argument('-name', type=json.loads)
+    parser.add_argument('-symbols_embedding_dim', type=json.loads)
+
     args = parser.parse_args()
 
     if not args.ckpt_spec_model and not args.nemo_spec_model:
         parser.error("either -nemo_spec_model or -ckpt_spec_model is required")
     return args
-
-def finetuning(cfg):
-    trainer = pl.Trainer(**cfg.trainer)
-    exp_manager(trainer, cfg.get("exp_manager", None))
-    model = HifiGanModel(cfg=cfg.model, trainer=trainer)
-    model.maybe_init_from_pretrained_checkpoint(cfg=cfg)
-    trainer.fit(model)
-
 
 def main():
     arg = argparser()
@@ -129,10 +165,29 @@ def main():
         pretrained = True
     manifest_folder = arg.manifest_folder
     manifest_name = arg.manifest_name
-    vc = VocoderConfigPreprocessing(manifest_name, spec_model, manifest_folder, pretrained)
-    vc.make_manifests()
-    
+    conf_name = arg.config_name
+    conf_path = arg.config_path
+    pitch_file = arg.pitch_file or 'pitch_file.json'
 
+    kwargs = {
+        "model_params": arg.model_params,
+        "model_train_dataset": arg.model_train_dataset,
+        "model_train_dataloader": arg.model_train_dataloader,
+        "model_val_dataset": arg.model_val_dataset,
+        "model_val_dataloader": arg.model_val_dataloader,
+        "preprocessor": arg.preprocessor,
+        "optim": arg.optim,
+        "trainer": arg.trainer,
+        "exp_manager": arg.exp_manager,
+        "generator": arg.generator,
+        "name": arg.name,
+        "symbols_embedding_dim": arg.symbols_embedding_dim,
+    }
+
+    run(manifest_name, spec_model, manifest_folder, pretrained, conf_name, conf_path, pitch_file, **kwargs)
 
 if __name__ == '__main__':
     main()
+    '''
+    py vocoder.py -manifest_name vd_manifest -nemo_spec_model models/fastpitch.nemo
+    '''

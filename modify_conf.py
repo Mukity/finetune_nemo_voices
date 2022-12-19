@@ -49,19 +49,20 @@ def modify_config(
     specgen: bool=True,
     **kwargs: dict
     ):
-    pitch_keys = [
-        'pitch_mean', 'pitch_std', 'pitch_fmin', 'pitch_fmax',
-        'sample_rate', 'sup_data_path', 'min_duration', 'max_duration'
-        ]
-    assert all(a in pitch_dict.keys() for a in pitch_keys), f"provide the following keys {pitch_keys}"
     if specgen:
         config_name = config_name or 'fastpitch_align_v1.05.yaml'
+        pitch_keys = [
+            'pitch_mean', 'pitch_std', 'pitch_fmin', 'pitch_fmax',
+            'sample_rate', 'sup_data_path', 'min_duration', 'max_duration'
+        ]
+        phoneme_dict_path = phoneme_dict_path or 'cmudict-0.7b_nv22.10'
+        heteronyms_path = heteronyms_path or 'heteronyms-052722'
+        whitelist_path = whitelist_path or 'lj_speech.tsv'
     else:
         config_name = config_name or 'hifigan.yaml'
+        pitch_keys = ['sample_rate',]
 
-    phoneme_dict_path = phoneme_dict_path or 'cmudict-0.7b_nv22.10'
-    heteronyms_path = heteronyms_path or 'heteronyms-052722'
-    whitelist_path = whitelist_path or 'lj_speech.tsv'
+    assert all(a in pitch_dict.keys() for a in pitch_keys), f"provide the following keys {pitch_keys}"        
 
     conf_path = conf_path or 'conf'
     mdl_params = kwargs.get('model_params', {})  or {}
@@ -78,16 +79,17 @@ def modify_config(
         mdl_train_dataset[k] = pitch_dict[k]
         mdl_val_dataset[k] = pitch_dict[k]
     
-    generator = {
-        '_target_': 'nemo.collections.tts.modules.hifigan_modules.Generator',
-        'resblock': 1,
-        'upsample_rates': [8, 8, 2, 2],
-        'upsample_kernel_sizes': [16, 16, 4, 4],
-        'upsample_initial_channel': 512,
-        'resblock_kernel_sizes': [3, 7, 11],
-        'resblock_dilation_sizes': [[1, 3, 5], [1, 3, 5], [1, 3, 5]]
-    }
-    generator.update(kwargs.get('generator', {}) or {})
+    if not specgen:
+        generator = {
+            '_target_': 'nemo.collections.tts.modules.hifigan_modules.Generator',
+            'resblock': 1,
+            'upsample_rates': [8, 8, 2, 2],
+            'upsample_kernel_sizes': [16, 16, 4, 4],
+            'upsample_initial_channel': 512,
+            'resblock_kernel_sizes': [3, 7, 11],
+            'resblock_dilation_sizes': [[1, 3, 5], [1, 3, 5], [1, 3, 5]]
+        }
+        generator.update(kwargs.get('generator', {}) or {})
 
     sc = OmegaConf.load(f'{conf_path}/{config_name}')
     mdl = None
@@ -123,6 +125,10 @@ def modify_config(
                         mdl = HifiGanModel.from_pretrained('tts_hifigan')
                 sc.model[k] = OmegaConf.create(mdl.cfg[k])
         
+        if not specgen:
+            sc.model.train_ds.dataset.manifest_filepath = train_dataset
+            sc.model.validation_ds.dataset.manifest_filepath = validation_datasets
+        
         sc.model.train_ds.dataset.update(mdl_train_dataset)
         sc.model.train_ds.dataloader_params.update(mdl_train_dataloader)
         
@@ -141,21 +147,3 @@ def modify_config(
 
     OmegaConf.save(sc, f"{conf_path}/{config_name.replace('.yaml', '_modified.yaml')}")
     return sc
-
-if __name__ == '__main__':
-    abc = {
-        "model_params": {"a":1},
-        "model_train_dataset":{"b":2}, 
-        "model_train_dataloader": {"c":3},
-        "model_val_dataset": {"d":4},
-        "model_val_dataloader": {"e":5},
-        "preprocessor": {"f": 6},
-        "optim": {"g":7},
-        "trainer": {"h":8},
-        "exp_manager": {"i":9},
-        "generator": {"j":10},
-        "name": "jacob",
-        "symbols_embedding_dim": 512,
-    }
-    modify_config(1,2,3,4,5,{"pitch_fmin":0, "pitch_fmax": 0, "pitch_mean": 0, "pitch_std": 1, "sample_rate": 12},
-    'hifigan.yaml', sup_data_path='abc', specgen=False, **abc)
