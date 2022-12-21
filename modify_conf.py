@@ -5,6 +5,7 @@ from nemo.collections.tts.models import FastPitchModel
 from nemo.collections.tts.models import HifiGanModel
 
 from omegaconf import OmegaConf, open_dict
+from wavpreprocessing import logger
 
 if not os.path.exists('tts_dataset_files'):
     os.mkdir('tts_dataset_files')
@@ -49,6 +50,9 @@ def modify_config(
     specgen: bool=True,
     **kwargs: dict
     ):
+    for k, v in kwargs.items():
+        logger.info(f"found key {k} with values {v}")
+    
     if specgen:
         config_name = config_name or 'fastpitch_align_v1.05.yaml'
         pitch_keys = [
@@ -145,7 +149,7 @@ def modify_config(
         sc.trainer.update(trainer)
 
         if exp_manager.get('exp_dir') is None:
-            exp_manager['exp_dir'] = f"exp_dirs/{config_name.replace('.yaml', '')}"
+            exp_manager['exp_dir'] = f"exp_dirs"
         sc.exp_manager.update(exp_manager)
         
         sc.model.optim.pop('sched')
