@@ -20,11 +20,11 @@ from nemo.collections.common.tokenizers.text_to_speech.tts_tokenizers import Eng
 from wavpreprocessing import logger
 from modify_conf import modify_config, default_whitelists
 
-if not os.path.exists('conf'):
-    os.mkdir('conf')
+if not os.path.exists('config'):
+    os.mkdir('config')
 
-if not os.path.isfile('conf/fastpitch_align_v1.05.yaml'):
-    wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/conf/fastpitch_align_v1.05.yaml', out='conf')
+if not os.path.isfile('config/fastpitch_align_v1.05.yaml'):
+    wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/conf/fastpitch_align_v1.05.yaml', out='config')
 
 whitelist = default_whitelists
 
@@ -201,7 +201,7 @@ def run(
     manifest_name,
     manifest_folder,
     sup_data_path,
-    conf_path,
+    config_path,
     config_name,
     phoneme_dict_path,
     heteronyms_path,
@@ -223,7 +223,7 @@ def run(
     whitelist_path = sgp.normalizer['whitelist']
 
     cfg = modify_config(train_dataset, validation_datasets, pitch_dict, config_name, phoneme_dict_path,
-            heteronyms_path, whitelist_path, conf_path, **kwargs)
+            heteronyms_path, whitelist_path, config_path, **kwargs)
     finetuning(cfg)
 
 def argparser():
@@ -235,7 +235,7 @@ def argparser():
     parser.add_argument('-manifest_name', type=str, required=True)
     parser.add_argument('-sup_data_path', type=str, required=True)
     parser.add_argument('-manifest_folder', type=str)
-    parser.add_argument('-conf_path', type=str)
+    parser.add_argument('-config_path', type=str)
     parser.add_argument('-config_name', type=str)
     parser.add_argument('-phoneme_dict_path', type=str)
     parser.add_argument('-heteronyms_path', type=str)
@@ -260,7 +260,7 @@ def main():
     audio_folder = args.audio_folder
     manifest_name = args.manifest_name
     manifest_folder = args.manifest_folder
-    conf_path = args.conf_path
+    config_path = args.config_path
     config_name = args.config_name
     phoneme_dict_path = args.phoneme_dict_path
     heteronyms_path = args.heteronyms_path
@@ -297,7 +297,7 @@ def main():
         "name": name,
         "symbols_embedding_dim": symbols_embedding_dim,
     }
-    run(audio_folder, manifest_name, manifest_folder, sup_data_path, conf_path, config_name,
+    run(audio_folder, manifest_name, manifest_folder, sup_data_path, config_path, config_name,
         phoneme_dict_path, heteronyms_path, **kwargs)
 
 if __name__ == "__main__":
