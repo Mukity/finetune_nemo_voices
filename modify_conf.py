@@ -7,23 +7,24 @@ from nemo.collections.tts.models import HifiGanModel
 from omegaconf import OmegaConf, open_dict
 from wavpreprocessing import logger
 
-if not os.path.exists('dataset_config_files'):
-    os.mkdir('dataset_config_files')
+dataset_config_folder = "dataset_config_files"
+if not os.path.exists(dataset_config_folder):
+    os.mkdir(dataset_config_folder)
 
-default_heteronyms = 'dataset_config_files/heteronyms-052722'
+default_heteronyms = f'{dataset_config_folder}/heteronyms-052722'
 if not os.path.isfile(default_heteronyms):
     wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/scripts/tts_dataset_files/heteronyms-052722',
-        out='dataset_config_files')
+        out=dataset_config_folder)
 
-default_phoneme_dict = 'dataset_config_files/cmudict-0.7b_nv22.10'
+default_phoneme_dict = f'{dataset_config_folder}/cmudict-0.7b_nv22.10'
 if not os.path.isfile(default_phoneme_dict):
     wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/scripts/tts_dataset_files/cmudict-0.7b_nv22.10',
-     out='dataset_config_files')
+     out=dataset_config_folder)
 
-default_whitelists = 'dataset_config_files/lj_speech.tsv'
+default_whitelists = f'{dataset_config_folder}/lj_speech.tsv'
 if not os.path.isfile(default_whitelists):
     wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/nemo_text_processing/text_normalization/en/data/whitelist/lj_speech.tsv',
-     out='dataset_config_files')
+     out=dataset_config_folder)
 
 """
 NOTE: all kwargs parameters require dicts
@@ -115,8 +116,8 @@ def modify_config(
             sc.pitch_std = pitch_dict['pitch_std']
         sc.sample_rate = pitch_dict['sample_rate']
 
-        sc.phoneme_dict_path = f"tts_dataset_files/{phoneme_dict_path}"
-        sc.heteronyms_path = f"tts_dataset_files/{heteronyms_path}"
+        sc.phoneme_dict_path = f"{dataset_config_folder}/{phoneme_dict_path}"
+        sc.heteronyms_path = f"{dataset_config_folder}/{heteronyms_path}"
         sc.whitelist_path = whitelist_path
 
         #sc.model.text_normalizer_call_kwargs
