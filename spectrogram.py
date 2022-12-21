@@ -18,7 +18,7 @@ from nemo_text_processing.text_normalization.normalize import Normalizer
 from nemo.collections.common.tokenizers.text_to_speech.tts_tokenizers import EnglishCharsTokenizer
 
 from wavpreprocessing import logger
-from modify_conf import modify_config
+from modify_conf import modify_config, default_whitelists
 
 if not os.path.exists('conf'):
     os.mkdir('conf')
@@ -26,7 +26,7 @@ if not os.path.exists('conf'):
 if not os.path.isfile('conf/fastpitch_align_v1.05.yaml'):
     wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/conf/fastpitch_align_v1.05.yaml', out='conf')
 
-whitelist = "tts_dataset_files/lj_speech.tsv"
+whitelist = default_whitelists
 
 class SpectroGramConfigPreprocessing:
     def __init__(

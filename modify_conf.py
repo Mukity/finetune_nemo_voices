@@ -7,20 +7,23 @@ from nemo.collections.tts.models import HifiGanModel
 from omegaconf import OmegaConf, open_dict
 from wavpreprocessing import logger
 
-if not os.path.exists('tts_dataset_files'):
-    os.mkdir('tts_dataset_files')
+if not os.path.exists('dataset_config_files'):
+    os.mkdir('dataset_config_files')
 
-if not os.path.isfile('tts_dataset_files/heteronyms-052722'):
+default_heteronyms = 'dataset_config_files/heteronyms-052722'
+if not os.path.isfile(default_heteronyms):
     wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/scripts/tts_dataset_files/heteronyms-052722',
-        out='tts_dataset_files')
+        out='dataset_config_files')
 
-if not os.path.isfile('tts_dataset_files/cmudict-0.7b_nv22.10'):
+default_phoneme_dict = 'dataset_config_files/cmudict-0.7b_nv22.10'
+if not os.path.isfile(default_phoneme_dict):
     wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/scripts/tts_dataset_files/cmudict-0.7b_nv22.10',
-     out='tts_dataset_files')
+     out='dataset_config_files')
 
-if not os.path.isfile('tts_dataset_files/lj_speech.tsv'):
+default_whitelists = 'dataset_config_files/lj_speech.tsv'
+if not os.path.isfile(default_whitelists):
     wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/nemo_text_processing/text_normalization/en/data/whitelist/lj_speech.tsv',
-     out='tts_dataset_files')
+     out='dataset_config_files')
 
 """
 NOTE: all kwargs parameters require dicts
@@ -46,29 +49,29 @@ def modify_config(
     phoneme_dict_path: str=None,
     heteronyms_path: str=None,
     whitelist_path: str=None,
-    conf_path: str=None,
+    config_path: str=None,
     specgen: bool=True,
     **kwargs: dict
     ):
     for k, v in kwargs.items():
-        logger.info(f"found key {k} with values {v}")
-    
+        if v:
+            logger.info(f"found {k} with values {v}")
     if specgen:
         config_name = config_name or 'fastpitch_align_v1.05.yaml'
         pitch_keys = [
             'pitch_mean', 'pitch_std', 'pitch_fmin', 'pitch_fmax',
             'sample_rate', 'sup_data_path', 'min_duration', 'max_duration'
         ]
-        phoneme_dict_path = phoneme_dict_path or 'cmudict-0.7b_nv22.10'
-        heteronyms_path = heteronyms_path or 'heteronyms-052722'
-        whitelist_path = whitelist_path or 'lj_speech.tsv'
+        phoneme_dict_path = phoneme_dict_path or default_phoneme_dict
+        heteronyms_path = heteronyms_path or default_heteronyms
+        whitelist_path = whitelist_path or default_whitelists
     else:
         config_name = config_name or 'hifigan.yaml'
         pitch_keys = ['sample_rate',]
 
     assert all(a in pitch_dict.keys() for a in pitch_keys), f"provide the following keys {pitch_keys}"        
 
-    conf_path = conf_path or 'conf'
+    config_path = config_path or 'config'
     mdl_params = kwargs.get('model_params', {})  or {}
     mdl_train_dataset = kwargs.get('model_train_dataset', {})  or {}
     mdl_train_dataloader = kwargs.get('model_train_dataloader', {})  or {}
@@ -95,7 +98,7 @@ def modify_config(
         }
         generator.update(kwargs.get('generator', {}) or {})
 
-    sc = OmegaConf.load(f'{conf_path}/{config_name}')
+    sc = OmegaConf.load(f'{config_path}/{config_name}')
     mdl = None
     with open_dict(sc):
         name = kwargs.get('name')
@@ -149,7 +152,7 @@ def modify_config(
         sc.trainer.update(trainer)
 
         if exp_manager.get('exp_dir') is None:
-            exp_manager['exp_dir'] = f"exp_dirs"
+            exp_manager['exp_dir'] = f"models/finetuned"
         sc.exp_manager.update(exp_manager)
         
         sc.model.optim.pop('sched')
@@ -158,5 +161,5 @@ def modify_config(
         if not specgen:
             sc.model.generator = generator
 
-    OmegaConf.save(sc, f"{conf_path}/{config_name.replace('.yaml', '_modified.yaml')}")
+    OmegaConf.save(sc, f"{config_path}/{config_name.replace('.yaml', '_modified.yaml')}")
     return sc

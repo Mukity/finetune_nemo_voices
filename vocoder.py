@@ -17,11 +17,11 @@ from nemo.utils.exp_manager import exp_manager
 from pathlib import Path
 from modify_conf import modify_config
 
-if not os.path.exists('conf'):
-    os.mkdir('conf')
+if not os.path.exists('config'):
+    os.mkdir('config')
 
-if not os.path.isfile('conf/hifigan.yaml'):
-    wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/conf/hifigan/hifigan.yaml', out='conf')
+if not os.path.isfile('config/hifigan.yaml'):
+    wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/conf/hifigan/hifigan.yaml', out='config')
 
 class VocoderConfigPreprocessing:    
     def __init__(self, manifest_name: str, spec_model: str, manifest_folder: str=None, from_file=True):
@@ -112,7 +112,7 @@ def finetuning(cfg):
     model.maybe_init_from_pretrained_checkpoint(cfg=cfg)
     trainer.fit(model)
 
-def run(manifest_name, spec_model, manifest_folder, pretrained, conf_name, conf_path, pitch_file, **kwargs):
+def run(manifest_name, spec_model, manifest_folder, pretrained, config_name, config_path, pitch_file, **kwargs):
     vc = VocoderConfigPreprocessing(manifest_name, spec_model, manifest_folder, pretrained)
     vc.make_manifests()
 
@@ -120,13 +120,13 @@ def run(manifest_name, spec_model, manifest_folder, pretrained, conf_name, conf_
     validation_datasets = vc.out['val_dataset']
     with open(pitch_file) as f:
         pitch_dict = json.load(f)
-    cfg = modify_config(train_dataset, validation_datasets, pitch_dict, conf_name, conf_path=conf_path, specgen=False,**kwargs)
+    cfg = modify_config(train_dataset, validation_datasets, pitch_dict, config_name, config_path=config_path, specgen=False,**kwargs)
     finetuning(cfg)
 
 def argparser():
     parser = argparse.ArgumentParser(
         prog="vocoder preprocessing",
-        description="generating vocoder conf and yaml files for use in the finetune",
+        description="generating vocoder config and yaml files for use in the finetune",
     )
     parser.add_argument('-manifest_name', type=str, required=True)
     parser.add_argument('-manifest_folder', type=str, required=False)
@@ -165,8 +165,8 @@ def main():
         pretrained = True
     manifest_folder = arg.manifest_folder
     manifest_name = arg.manifest_name
-    conf_name = arg.config_name
-    conf_path = arg.config_path
+    config_name = arg.config_name
+    config_path = arg.config_path
     pitch_file = arg.pitch_file or 'pitch_file.json'
 
     kwargs = {
@@ -184,7 +184,7 @@ def main():
         "symbols_embedding_dim": arg.symbols_embedding_dim,
     }
 
-    run(manifest_name, spec_model, manifest_folder, pretrained, conf_name, conf_path, pitch_file, **kwargs)
+    run(manifest_name, spec_model, manifest_folder, pretrained, config_name, config_path, pitch_file, **kwargs)
 
 if __name__ == '__main__':
     main()
