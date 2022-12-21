@@ -6,7 +6,8 @@ import argparse
 
 import soundfile as sf
 
-from nemo.collections.tts.models.base import SpectrogramGenerator, Vocoder
+from nemo.collections.tts.models import FastPitchModel
+from nemo.collections.tts.models import HifiGanModel
 
 audio_folder = "audios/generated_audios"
 
@@ -17,19 +18,19 @@ def create_audio_file(text: str, spec_gen_pretrained: str=None, vocoder_pretrain
     assert vocoder_checkpoint or vocoder_nemo or vocoder_pretrained, "Vocoder is not provided"
     filename = hashlib.md5(text.encode()).hexdigest() + '.wav'
     if spec_gen_pretrained:
-        spec_generator = SpectrogramGenerator.from_pretrained(spec_gen_pretrained)
+        spec_generator = FastPitchModel.from_pretrained(spec_gen_pretrained)
     elif spec_gen_nemo:
-        spec_generator = SpectrogramGenerator.restore_from(spec_gen_nemo)
+        spec_generator = FastPitchModel.restore_from(spec_gen_nemo)
     else:
-        spec_generator = SpectrogramGenerator.load_from_checkpoint(spec_gen_checkpoint)
+        spec_generator = FastPitchModel.load_from_checkpoint(spec_gen_checkpoint)
     spec_generator.eval()
     
     if vocoder_pretrained:
-        vocoder = Vocoder.from_pretrained(vocoder_pretrained)
+        vocoder = HifiGanModel.from_pretrained(vocoder_pretrained)
     elif vocoder_nemo:
-        vocoder = Vocoder.restore_from(vocoder_nemo)
+        vocoder = HifiGanModel.restore_from(vocoder_nemo)
     else:
-        vocoder = Vocoder.load_from_checkpoint(vocoder_checkpoint)
+        vocoder = HifiGanModel.load_from_checkpoint(vocoder_checkpoint)
     
     parsed = spec_generator.parse(text)
     spectrogram = spec_generator.generate_spectrogram(tokens=parsed)
