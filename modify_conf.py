@@ -150,6 +150,10 @@ def modify_config(
         sc.model.preprocessor.update(preprocessor)
         sc.model.optim.update(optim)
         sc.trainer.update(trainer)
+        
+        sc.trainer.pop('strategy')
+        if 'max_epochs' not in sc.trainer:
+            sc.trainer['max_epochs'] = 1000
 
         if exp_manager.get('exp_dir') is None:
             exp_manager['exp_dir'] = f"models/finetuned"

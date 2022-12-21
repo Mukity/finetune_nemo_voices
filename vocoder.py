@@ -189,10 +189,10 @@ def main():
 if __name__ == '__main__':
     main()
     '''
-    python vocoder.py -manifest_name vd_manifest
-    -ckpt_spec_model nemo_experiments/FastPitch/2022-12-19_12-12-24/checkpoints/FastPitch--val_loss\=3.6752-epoch\=1000-last.ckpt
-    -model_train_dataloader '{"batch_size":32}'
-    -model_params '{"max_epochs": 1000}'
-    -optim '{"lr": 0.00001}'
+    python vocoder.py -manifest_name vd_manifest \
+    -nemo_spec_model models/pretrained/fastpitch.nemo \
+    -model_train_dataloader '{"batch_size":32}' \
+    -model_params '{"max_epochs": 1000}' \
+    -optim '{"lr": 0.00001}' \
     -trainer '{"check_val_every_n_epoch": 10}'
     '''

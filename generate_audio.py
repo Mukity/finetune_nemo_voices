@@ -1,13 +1,13 @@
 import os
-
 import hashlib
-
 import argparse
 
 import soundfile as sf
 
 from nemo.collections.tts.models import FastPitchModel
 from nemo.collections.tts.models import HifiGanModel
+
+from wavpreprocessing import logger
 
 audio_folder = "audios/generated_audios"
 
@@ -38,7 +38,9 @@ def create_audio_file(text: str, spec_gen_pretrained: str=None, vocoder_pretrain
     audio = audio.to('cpu').detach().numpy()[0]
     if not os.path.exists(audio_folder):
         os.mkdir(audio_folder)
-    sf.write(f"{audio_folder}/{filename}", audio, 22050)
+    save_path =  f"{audio_folder}/{filename}"
+    sf.write(save_path, audio, 22050)
+    logger.info(f"audio file generated on path {save_path}")
 
 def main():
     parser = argparse.ArgumentParser(description="Argument parser")
