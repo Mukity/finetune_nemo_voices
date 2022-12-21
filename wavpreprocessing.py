@@ -25,30 +25,30 @@ class WavPreprocessing:
     def __init__(self, audio_folder):
         self.audio_folder = audio_folder
 
-    def flatten_audio_folder(self, audio_folder: str=None, levels: int=2):
-        audio_folder = audio_folder or self.audio_folder
-        wd = os.getcwd()
-        os.chdir(audio_folder)
-        destination_dir = os.getcwd()
-        l1 = os.listdir()
-        for d in l1:
+    def flatten_audio_folder(self, audio_folder: str=None):
+        folder = audio_folder or self.audio_folder
+        def move_files(folder=folder, files_path=[], dest=folder, empty_dirs=[]):
+            l1 = os.listdir(folder)
+            for l in l1:
+                path = f'{folder}/{l}'
+                if os.path.isfile(path):
+                    files_path.append(path)
+                    try:
+                        shutil.move(path, dest)
+                    except shutil.Error:
+                        pass
+                else:
+                    temp_folder = f"{folder}/{l}"
+                    empty_dirs.append(temp_folder)
+                    files_path, empty_dirs = move_files(temp_folder, files_path, empty_dirs=empty_dirs)
+            return files_path, empty_dirs
+        _, empty = move_files()
+        for a in empty:
             try:
-                os.chdir(d)
-                l2 = os.listdir()
-                for f in l2:
-                    if levels == 2:
-                        shutil.move(f, destination_dir)
-                    else:
-                        os.chdir(f)
-                        l3 = os.listdir()
-                        for l in l3:
-                            shutil.move(f, destination_dir)
-                os.chdir('..')
-                os.rmdir(d)
-            except NotADirectoryError:
+                shutil.rmtree(a)
+            except FileNotFoundError:
                 pass
-        os.chdir(wd)
-        logger.info(f'{audio_folder} has been flattened with levels {levels}')
+        logger.info(f"successfully flattened files in {folder}")
 
     def stereo_to_mono(self, audio_folder: str=None):
         """
@@ -72,15 +72,13 @@ def argparser():
         description="Wav file preprocessing",
     )
     parser.add_argument('-audio_folder', required=True, type=str)
-    parser.add_argument('-levels', type=int)
     return parser.parse_args()
 
 def main():
     arg = argparser()
     audio_folder = arg.audio_folder
-    levels = arg.levels
     wp = WavPreprocessing(audio_folder)
-    wp.flatten_audio_folder(levels=levels)
+    wp.flatten_audio_folder()
     wp.stereo_to_mono()
 
 if __name__ == "__main__":
