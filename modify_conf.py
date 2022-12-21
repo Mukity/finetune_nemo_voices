@@ -143,6 +143,9 @@ def modify_config(
         sc.model.preprocessor.update(preprocessor)
         sc.model.optim.update(optim)
         sc.trainer.update(trainer)
+
+        if exp_manager.get('exp_dir') is None:
+            exp_manager['exp_dir'] = f"exp_dirs/{config_name.replace('.yaml', '')}"
         sc.exp_manager.update(exp_manager)
         
         sc.model.optim.pop('sched')
