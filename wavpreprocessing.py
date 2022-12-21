@@ -22,11 +22,38 @@ def get_logger(name):
 logger = get_logger(__name__)
 
 class WavPreprocessing:
-    def __init__(self, audio_folder):
-        self.audio_folder = audio_folder
+    def __init__(self, audio_folder: str=None, audio_zip: str=None):
+        if not audio_folder and not audio_zip:
+            raise Exception("provide either audio_folder or audio_zip")
+        self.all_audios = 'audios/'
+
+        self.audio_zip = audio_zip
+        if audio_zip:
+            self.uncompress()
+        else:
+            self.audio_folder = audio_folder
+        
+        if not os.path.exists(self.all_audios):
+            os.mkdir(self.all_audios)
+
+    def uncompress(self):
+        if self.audio_zip:
+            try:
+                os.system(f'unzip {self.audio_zip}')
+                f = self.audio_zip.replace('.zip', '')
+                self.audio_folder = f"{self.all_audios}{f}"
+                shutil.move(f, self.audio_folder)
+                logger.info(f"uncompressed {self.audio_zip}")
+                
+            except shutil.Error as e:
+                logger.warning(f"{e}")
+        else:
+            logger.info(f"nothing to uncompress")
+        
 
     def flatten_audio_folder(self, audio_folder: str=None):
-        folder = audio_folder or self.audio_folder
+        folder =  audio_folder or self.audio_folder
+        assert folder, "Audio folder must be provided"
         def move_files(folder=folder, files_path=[], dest=folder, empty_dirs=[]):
             l1 = os.listdir(folder)
             for l in l1:
@@ -57,6 +84,7 @@ class WavPreprocessing:
         padding (512, 512) at dimension 2 of input
         """
         audio_folder = audio_folder or self.audio_folder
+        assert audio_folder, "Audio folder must be provided"
         audio_list = os.listdir(audio_folder)
         for af in audio_list:
             if af.endswith('.wav'):
@@ -71,13 +99,18 @@ def argparser():
         prog="wav preprocessing",
         description="Wav file preprocessing",
     )
-    parser.add_argument('-audio_folder', required=True, type=str)
-    return parser.parse_args()
+    parser.add_argument('-audio_folder', required=False, type=str)
+    parser.add_argument('-audio_zip', required=False, type=str)
+    arg = parser.parse_args()
+
+    if not arg.audio_folder and not arg.audio_zip:
+        parser.error("provide either -audio_folder or -audio_zip")
+    return arg
 
 def main():
     arg = argparser()
-    audio_folder = arg.audio_folder
-    wp = WavPreprocessing(audio_folder)
+    wp = WavPreprocessing(audio_folder=arg.audio_folder, audio_zip=arg.audio_zip)
+    wp.uncompress()
     wp.flatten_audio_folder()
     wp.stereo_to_mono()
 
