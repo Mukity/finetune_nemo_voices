@@ -61,6 +61,7 @@ def main():
 
     create_audio_file(
         args.text,
+        args.filename,
         args.spec_gen_pretrained,
         args.vocoder_pretrained,
         args.spec_gen_nemo,
