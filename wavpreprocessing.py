@@ -22,13 +22,13 @@ def get_logger(name):
 logger = get_logger(__name__)
 
 class WavPreprocessing:
-    def __init__(self, audio_folder: str=None, audio_zip: str=None):
-        if not audio_folder and not audio_zip:
-            raise Exception("provide either audio_folder or audio_zip")
+    def __init__(self, audio_folder: str=None, compressed: str=None):
+        if not audio_folder and not compressed:
+            raise Exception("provide either audio_folder or compressed")
         self.all_audios = 'audios/'
 
-        self.audio_zip = audio_zip
-        if audio_zip:
+        self.compressed = compressed
+        if compressed:
             self.uncompress()
         else:
             self.audio_folder = audio_folder
@@ -37,22 +37,21 @@ class WavPreprocessing:
             os.mkdir(self.all_audios)
 
     def uncompress(self):
-        if self.audio_zip:
+        if self.compressed:
             try:
-                if self.audio_zip.endswith('.zip'):
-                    os.system(f'unzip {self.audio_zip}')
-                    f = self.audio_zip.replace('.zip', '')
-
-                elif self.audio_zip.endswith('.tar.gz'):
-                    os.system(f'tar -xvf {self.audio_zip}')
-                    f = self.audio_zip.replace('.tar.gz', '')
-                
+                before = set(os.listdir(os.getcwd()))
+                if self.compressed.endswith('.zip'):
+                    os.system(f'unzip {self.compressed}')
+                elif self.compressed.endswith('.tar.gz'):
+                    os.system(f'tar -xvf {self.compressed}')                
                 else:
                     raise Exception(".zip and .tar.gz formats supported")
-
+                
+                after = set(os.listdir(os.getcwd()))
+                f = [b for b in after if b not in before][0]
                 self.audio_folder = f"{self.all_audios}{f}"
                 shutil.move(f, self.audio_folder)
-                logger.info(f"uncompressed {self.audio_zip}")
+                logger.info(f"uncompressed {self.compressed}")
                 
             except shutil.Error as e:
                 logger.warning(f"{e}")
@@ -109,16 +108,16 @@ def argparser():
         description="Wav file preprocessing",
     )
     parser.add_argument('-audio_folder', required=False, type=str)
-    parser.add_argument('-audio_zip', required=False, type=str)
+    parser.add_argument('-compressed', required=False, type=str)
     arg = parser.parse_args()
 
-    if not arg.audio_folder and not arg.audio_zip:
-        parser.error("provide either -audio_folder or -audio_zip")
+    if not arg.audio_folder and not arg.compressed:
+        parser.error("provide either -audio_folder or -compressed")
     return arg
 
 def main():
     arg = argparser()
-    wp = WavPreprocessing(audio_folder=arg.audio_folder, audio_zip=arg.audio_zip)
+    wp = WavPreprocessing(audio_folder=arg.audio_folder, compressed=arg.compressed)
     wp.uncompress()
     wp.flatten_audio_folder()
     wp.stereo_to_mono()
