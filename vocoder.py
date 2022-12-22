@@ -112,7 +112,8 @@ def finetuning(cfg):
     model.maybe_init_from_pretrained_checkpoint(cfg=cfg)
     trainer.fit(model)
 
-def run(manifest_name, spec_model, manifest_folder, pretrained, config_name, config_path, pitch_file, **kwargs):
+def run(manifest_name, spec_model, manifest_folder, pretrained, config_name, config_path, pitch_file, 
+        init_nemo, init_pretrained, init_checkpoint, **kwargs):
     vc = VocoderConfigPreprocessing(manifest_name, spec_model, manifest_folder, pretrained)
     vc.make_manifests()
 
@@ -120,7 +121,9 @@ def run(manifest_name, spec_model, manifest_folder, pretrained, config_name, con
     validation_datasets = vc.out['val_dataset']
     with open(pitch_file) as f:
         pitch_dict = json.load(f)
-    cfg = modify_config(train_dataset, validation_datasets, pitch_dict, config_name, config_path=config_path, specgen=False,**kwargs)
+    cfg = modify_config(
+        train_dataset, validation_datasets, pitch_dict, config_name, config_path=config_path, specgen=False,
+        init_nemo=init_nemo, init_checkpoint=init_checkpoint, init_pretrained=init_pretrained, **kwargs)
     finetuning(cfg)
 
 def argparser():
@@ -148,6 +151,10 @@ def argparser():
     parser.add_argument('-generator', type=json.loads)
     parser.add_argument('-name', type=json.loads)
     parser.add_argument('-symbols_embedding_dim', type=json.loads)
+
+    parser.add_argument('-init_nemo', type=str)
+    parser.add_argument('-init_pretrained', type=str)
+    parser.add_argument('-init_checkpoint', type=str)
 
     args = parser.parse_args()
 

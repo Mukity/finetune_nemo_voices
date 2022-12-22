@@ -52,6 +52,9 @@ def modify_config(
     whitelist_path: str=None,
     config_path: str=None,
     specgen: bool=True,
+    init_nemo: str=None,
+    init_pretrained: str=None,
+    init_checkpoint: str=None,
     **kwargs: dict
     ):
     for k, v in kwargs.items():
@@ -165,6 +168,18 @@ def modify_config(
         sc.model.update(mdl_params)
         if not specgen:
             sc.model.generator = generator
+        
+        if init_nemo:
+            sc.init_from_nemo_model = init_nemo
+        elif init_pretrained:
+            sc.init_from_pretrained_model = init_pretrained
+        elif init_checkpoint:
+            sc.init_from_ptl_ckpt - init_checkpoint
+        else:
+            if specgen:
+                sc.init_from_pretrained_model = 'tts_en_fastpitch'
+            else:
+                sc.init_from_pretrained_model = 'tts_hifigan'
 
     OmegaConf.save(sc, f"{config_path}/{config_name.replace('.yaml', '_modified.yaml')}")
     return sc

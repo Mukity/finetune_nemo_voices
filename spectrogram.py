@@ -205,6 +205,9 @@ def run(
     config_name,
     phoneme_dict_path,
     heteronyms_path,
+    init_nemo,
+    init_pretrained,
+    init_checkpoint,
     **kwargs
     ):
     norm_keys = ['normalizer', 'normalizer_kwargs']
@@ -222,8 +225,10 @@ def run(
     pitch_dict = sgp.out
     whitelist_path = sgp.normalizer['whitelist']
 
-    cfg = modify_config(train_dataset, validation_datasets, pitch_dict, config_name, phoneme_dict_path,
-            heteronyms_path, whitelist_path, config_path, **kwargs)
+    cfg = modify_config(train_dataset, validation_datasets, pitch_dict, config_name,
+            phoneme_dict_path, heteronyms_path, whitelist_path, config_path,
+            init_nemo=init_nemo, init_checkpoint=init_checkpoint, init_pretrained=init_pretrained,
+              **kwargs)
     finetuning(cfg)
 
 def argparser():
@@ -253,6 +258,9 @@ def argparser():
     parser.add_argument('-generator', type=json.loads)
     parser.add_argument('-name', type=json.loads)
     parser.add_argument('-symbols_embedding_dim', type=json.loads)
+    parser.add_argument('-init_nemo', type=str)
+    parser.add_argument('-init_pretrained', type=str)
+    parser.add_argument('-init_checkpoint', type=str)
     return parser.parse_args()
 
 def main():
@@ -264,41 +272,30 @@ def main():
     config_name = args.config_name
     phoneme_dict_path = args.phoneme_dict_path
     heteronyms_path = args.heteronyms_path
+    init_nemo = args.init_nemo
+    init_pretrained = args.init_pretrained
+    init_checkpoint = args.init_checkpoint
 
-    normalizer = args.normalizer or {}
-    normalizer_kwargs = args.normalizer_kwargs or {}
     sup_data_path = args.sup_data_path
-    model_params = args.model_params
-    model_train_dataset = args.model_train_dataset
-    model_train_dataloader = args.model_train_dataloader
-    model_val_dataset = args.model_val_dataset
-    model_val_dataloader = args.model_val_dataloader
-    preprocessor = args.preprocessor
-    optim = args.optim
-    trainer = args.trainer
-    exp_manager = args.exp_manager
-    generator = args.generator
-    name = args.name
-    symbols_embedding_dim = args.symbols_embedding_dim
     
     kwargs = {
-        "normalizer": normalizer,
-        "normalizer_kwargs": normalizer_kwargs,
-        "model_params": model_params,
-        "model_train_dataset": model_train_dataset,
-        "model_train_dataloader": model_train_dataloader,
-        "model_val_dataset": model_val_dataset,
-        "model_val_dataloader": model_val_dataloader,
-        "preprocessor": preprocessor,
-        "optim": optim,
-        "trainer": trainer,
-        "exp_manager": exp_manager,
-        "generator": generator,
-        "name": name,
-        "symbols_embedding_dim": symbols_embedding_dim,
+        "normalizer": args.normalizer or {},
+        "normalizer_kwargs": args.normalizer_kwargs or {},
+        "model_params": args.model_params,
+        "model_train_dataset": args.model_train_dataset,
+        "model_train_dataloader": args.model_train_dataloader,
+        "model_val_dataset": args.model_val_dataset,
+        "model_val_dataloader": args.model_val_dataloader,
+        "preprocessor": args.preprocessor,
+        "optim": args.optim,
+        "trainer": args.trainer,
+        "exp_manager": args.exp_manager,
+        "generator": args.generator,
+        "name": args.name,
+        "symbols_embedding_dim": args.symbols_embedding_dim,
     }
     run(audio_folder, manifest_name, manifest_folder, sup_data_path, config_path, config_name,
-        phoneme_dict_path, heteronyms_path, **kwargs)
+        phoneme_dict_path, heteronyms_path, init_nemo, init_pretrained, init_checkpoint, **kwargs)
 
 if __name__ == "__main__":
     main()
