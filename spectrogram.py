@@ -67,7 +67,7 @@ class SpectroGramConfigPreprocessing:
             os.mkdir(self.manifest_folder)
 
     
-    def create_manifest(self, manifest_name: str=None, audio_folder: str=None, manifest_folder: str=None):
+    def create_manifest(self, manifest_name: str=None, audio_folder: str=None, manifest_folder: str=None, librispeech: bool=False, speaker_id: str=None):
         audio_folder = audio_folder or self.audio_folder
         manifest_name = manifest_name or self.manifest_name
         manifest_folder = manifest_folder or self.manifest_folder
@@ -78,22 +78,32 @@ class SpectroGramConfigPreprocessing:
         max_duration = 0
         all_files = os.listdir(audio_folder)
         for a in all_files:
-            if a.endswith('.wav'):
+            if (not librispeech and a.endswith('.wav')) or (librispeech and a.endswith('.wav') and a.startswith(speaker_id)):
                 fpath = f"{audio_folder}/{a}"
-                with open(fpath.replace('.wav', '.txt')) as f:
-                    text = f.read()
                 duration = librosa.get_duration(filename=fpath)
+                if librispeech:
+                    txt = {
+                        "text": ".original.txt",
+                        "normalized_text": ".normalized.txt",
+                    }
+                else:
+                    txt = {
+                        "text": ".txt"
+                    }
+
+                ad = {
+                    "audio_filepath": fpath,
+                    "duration": duration,
+                }
+                for k, ext in txt.items():
+                    with open(fpath.replace('.wav', ext)) as f:
+                        ad[k] = f.read()
 
                 if min_duration > duration:
                     min_duration = duration
                 if max_duration < duration:
                     max_duration = duration
 
-                ad = {
-                    "audio_filepath": fpath,
-                    "text": text,
-                    "duration": duration,
-                }
                 sr.append(librosa.get_samplerate(fpath))
                 audio_dicts.append(ad)
 
@@ -208,6 +218,8 @@ def run(
     init_nemo,
     init_pretrained,
     init_checkpoint,
+    librispeech,
+    speaker_id,
     **kwargs
     ):
     norm_keys = ['normalizer', 'normalizer_kwargs']
@@ -216,7 +228,7 @@ def run(
         norm[k] = kwargs.pop(k) or {}
     
     sgp = SpectroGramConfigPreprocessing(audio_folder, manifest_name, manifest_folder, **norm)
-    sgp.create_manifest()
+    sgp.create_manifest(librispeech=librispeech, speaker_id=speaker_id)
     sgp.pre_calculate_supplementary_data(sup_data_path)
     logger.info(json.dumps(sgp.out))
 
@@ -229,7 +241,7 @@ def run(
             phoneme_dict_path, heteronyms_path, whitelist_path, config_path,
             init_nemo=init_nemo, init_checkpoint=init_checkpoint, init_pretrained=init_pretrained,
               **kwargs)
-    finetuning(cfg)
+    #finetuning(cfg)
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -261,7 +273,12 @@ def argparser():
     parser.add_argument('-init_nemo', type=str)
     parser.add_argument('-init_pretrained', type=str)
     parser.add_argument('-init_checkpoint', type=str)
-    return parser.parse_args()
+    parser.add_argument('-librispeech', type=bool, default=False)
+    parser.add_argument('-speaker_id', type=str)
+    args = parser.parse_args()
+    if args.librispeech and not args.speaker_id:
+        parser.error('librispeech requires -speaker_id value')
+    return args
 
 def main():
     args = argparser()
@@ -277,6 +294,8 @@ def main():
     init_checkpoint = args.init_checkpoint
 
     sup_data_path = args.sup_data_path
+    librispeech = args.librispeech
+    speaker_id = args.speaker_id
     
     kwargs = {
         "normalizer": args.normalizer or {},
@@ -295,10 +314,10 @@ def main():
         "symbols_embedding_dim": args.symbols_embedding_dim,
     }
     run(audio_folder, manifest_name, manifest_folder, sup_data_path, config_path, config_name,
-        phoneme_dict_path, heteronyms_path, init_nemo, init_pretrained, init_checkpoint, **kwargs)
+        phoneme_dict_path, heteronyms_path, init_nemo, init_pretrained, init_checkpoint, librispeech, speaker_id, **kwargs)
 
 if __name__ == "__main__":
     main()
     """
-    py spectrogram.py -audio_folder audios/VD -manifest_name vd_manifest -sup_data_path vd_sup_data
+    python spectrogram.py -manifest_name vd_manifest -sup_data_path vd_sup_data -init_pretrained tts_en_fastpitch -trainer '{"max_steps":1000,"check_val_every_n_epoch":25,"devices":1,"strategy":null}' -model_train_dataloader '{"batch_size":24}' -model_val_dataloader '{"batch_size":24}' -optim '{"name":"adam"}' -audio_folder audios/VD
     """
