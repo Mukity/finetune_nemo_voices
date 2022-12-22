@@ -9,7 +9,6 @@ import soundfile as sf
 import torch
 import pytorch_lightning as pl
 
-from nemo.core.config import hydra_runner
 from nemo.utils.exp_manager import exp_manager
 from nemo.collections.tts.models import HifiGanModel
 from nemo.collections.tts.models import FastPitchModel
@@ -106,9 +105,6 @@ class VocoderConfigPreprocessing:
                 f.write(json.dumps(r) + '\n')
         return manifest_modified
 
-
-
-@hydra_runner(config_path="conf", config_name="hifigan")
 def finetuning(cfg):
     trainer = pl.Trainer(**cfg.trainer)
     exp_manager(trainer, cfg.get("exp_manager", None))
