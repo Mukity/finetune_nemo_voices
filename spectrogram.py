@@ -10,6 +10,7 @@ import pytorch_lightning as pl
 
 from tqdm.notebook import tqdm
 
+from nemo.core.config import hydra_runner
 from nemo.utils.exp_manager import exp_manager
 from nemo.collections.tts.models import FastPitchModel
 from nemo.collections.tts.torch.data import TTSDataset
@@ -192,6 +193,7 @@ class SpectroGramConfigPreprocessing:
             json.dump(self.out, f, indent=4)
         return self.out
 
+@hydra_runner(config_path="conf", config_name="fastpitch_align_v1.05")
 def finetuning(cfg):
     if hasattr(cfg.model.optim, 'sched'):
         logger.warning("You are using an optimizer scheduler while finetuning. Are you sure this is intended?")
@@ -241,7 +243,7 @@ def run(
             phoneme_dict_path, heteronyms_path, whitelist_path, config_path,
             init_nemo=init_nemo, init_checkpoint=init_checkpoint, init_pretrained=init_pretrained,
               **kwargs)
-    #finetuning(cfg)
+    finetuning(cfg)
 
 def argparser():
     parser = argparse.ArgumentParser(
