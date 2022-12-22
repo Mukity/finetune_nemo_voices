@@ -11,12 +11,12 @@ from wavpreprocessing import logger
 
 audio_folder = "audios/generated_audios"
 
-def create_audio_file(text: str, spec_gen_pretrained: str=None, vocoder_pretrained: str=None,
+def create_audio_file(text: str, filename: str=None, spec_gen_pretrained: str=None, vocoder_pretrained: str=None,
             spec_gen_nemo: str=None, vocoder_nemo: str=None, spec_gen_checkpoint: str=None, vocoder_checkpoint: str=None, audio_folder=audio_folder):
 
     assert spec_gen_checkpoint or spec_gen_nemo or spec_gen_pretrained, "SpectrogramGenerator is not provided"
     assert vocoder_checkpoint or vocoder_nemo or vocoder_pretrained, "Vocoder is not provided"
-    filename = hashlib.md5(text.encode()).hexdigest() + '.wav'
+    filename = filename or hashlib.md5(text.encode()).hexdigest() + '.wav'
     if spec_gen_pretrained:
         spec_generator = FastPitchModel.from_pretrained(spec_gen_pretrained)
     elif spec_gen_nemo:
@@ -45,6 +45,7 @@ def create_audio_file(text: str, spec_gen_pretrained: str=None, vocoder_pretrain
 def main():
     parser = argparse.ArgumentParser(description="Argument parser")
     parser.add_argument("-text", required=True)
+    parser.add_argument("-filename", type=str)
     parser.add_argument("-spec_gen_pretrained")
     parser.add_argument("-spec_gen_nemo")
     parser.add_argument("-spec_gen_checkpoint")
