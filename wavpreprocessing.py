@@ -39,8 +39,17 @@ class WavPreprocessing:
     def uncompress(self):
         if self.audio_zip:
             try:
-                os.system(f'unzip {self.audio_zip}')
-                f = self.audio_zip.replace('.zip', '')
+                if self.audio_zip.endswith('.zip'):
+                    os.system(f'unzip {self.audio_zip}')
+                    f = self.audio_zip.replace('.zip', '')
+
+                elif self.audio_zip.endswith('.tar.gz'):
+                    os.system(f'tar -xvf {self.audio_zip}')
+                    f = self.audio_zip.replace('.tar.gz', '')
+                
+                else:
+                    raise Exception(".zip and .tar.gz formats supported")
+
                 self.audio_folder = f"{self.all_audios}{f}"
                 shutil.move(f, self.audio_folder)
                 logger.info(f"uncompressed {self.audio_zip}")
