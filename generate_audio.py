@@ -34,6 +34,7 @@ def create_audio_file(text: str, filename: str=None, spec_gen_pretrained: str=No
     
     parsed = spec_generator.parse(text)
     spectrogram = spec_generator.generate_spectrogram(tokens=parsed)
+    vocoder.to('cpu')
     audio = vocoder.convert_spectrogram_to_audio(spec=spectrogram)
     audio = audio.to('cpu').detach().numpy()[0]
     if not os.path.exists(audio_folder):

@@ -5,8 +5,8 @@
     "val_dataset": "manifests/vd_manifest_val.json",
     "train_dataset": "manifests/vd_manifest_train.json",
     "sup_data_path": "vd_sup_data",
-    "pitch_mean": 173.52857971191406,
-    "pitch_std": 39.51873016357422,
+    "pitch_mean": 172.53358459472656,
+    "pitch_std": 39.38795852661133,
     "pitch_fmin": 94.1154556274414,
     "pitch_fmax": 323.9647521972656
 }
