@@ -201,7 +201,6 @@ def finetuning(cfg):
     lr_logger = pl.callbacks.LearningRateMonitor()
     epoch_time_logger = LogEpochTimeCallback()
     trainer.callbacks.extend([lr_logger, epoch_time_logger])
-    print(torch.cuda.memory_summary())
     trainer.fit(model)
 
 def run(
@@ -251,7 +250,7 @@ def argparser():
     parser.add_argument('-sup_data_path', type=str, required=True)
     parser.add_argument('-manifest_folder', type=str)
     parser.add_argument('-config_path', type=str)
-    parser.add_argument('-config_name', type=str)
+    parser.add_argument('-config_name', type=str, required=True)
     parser.add_argument('-phoneme_dict_path', type=str)
     parser.add_argument('-heteronyms_path', type=str)
     parser.add_argument('-normalizer', type=json.loads, help='dict should be written as {\"key1\":\"value1\"}')
