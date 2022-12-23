@@ -1,12 +1,12 @@
 {
-    "sample_rate": 48000,
-    "max_duration": 7.44,
-    "min_duration": 0.48,
-    "val_dataset": "manifests/vd_manifest_val.json",
-    "train_dataset": "manifests/vd_manifest_train.json",
-    "sup_data_path": "vd_sup_data",
-    "pitch_mean": 172.53358459472656,
-    "pitch_std": 39.38795852661133,
-    "pitch_fmin": 94.1154556274414,
-    "pitch_fmax": 323.9647521972656
+    "sample_rate": 24000,
+    "max_duration": 23.21,
+    "min_duration": 1.0100416666666667,
+    "val_dataset": "manifests/librispeech_manifest_val.json",
+    "train_dataset": "manifests/librispeech_manifest_train.json",
+    "sup_data_path": "librispeech_sup_data",
+    "pitch_mean": 212.4727783203125,
+    "pitch_std": 65.17254638671875,
+    "pitch_fmin": 66.16637420654297,
+    "pitch_fmax": 1853.9154052734375
 }

@@ -134,7 +134,7 @@ class SpectroGramConfigPreprocessing:
         return self.out
 
 
-    def pre_calculate_supplementary_data(self, sup_data_path: str, sample_rate: int=None, delete_sup_folder: bool=True, **kwargs):
+    def pre_calculate_supplementary_data(self, sup_data_path: str, sample_rate: int=None, **kwargs):
         sample_rate = self.out.get('sample_rate') or sample_rate
         assert sample_rate, "provide sample_rate to calculate supplementary data"
 
@@ -180,9 +180,6 @@ class SpectroGramConfigPreprocessing:
                 pitch_mean, pitch_std = pitch_tensor.mean().item(), pitch_tensor.std().item()
                 pitch_min, pitch_max = pitch_tensor.min().item(), pitch_tensor.max().item()
         
-        if delete_sup_folder:
-            os.system(f'rm -rf {sup_data_path}')
-        
         self.out['sup_data_path'] = sup_data_path
         self.out['pitch_mean'] = pitch_mean
         self.out['pitch_std'] = pitch_std
@@ -204,6 +201,7 @@ def finetuning(cfg):
     lr_logger = pl.callbacks.LearningRateMonitor()
     epoch_time_logger = LogEpochTimeCallback()
     trainer.callbacks.extend([lr_logger, epoch_time_logger])
+    print(torch.cuda.memory_summary())
     trainer.fit(model)
 
 def run(

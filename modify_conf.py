@@ -110,17 +110,17 @@ def modify_config(
         if name:
             sc.name = name
         
-        if init_nemo:
-            sc.init_from_nemo_model = init_nemo
-        elif init_pretrained:
-            sc.init_from_pretrained_model = init_pretrained
-        elif init_checkpoint:
-            sc.init_from_ptl_ckpt - init_checkpoint
-        else:
-            if specgen:
-                sc.init_from_pretrained_model = 'tts_en_fastpitch'
-            else:
-                sc.init_from_pretrained_model = 'tts_hifigan'
+        #if init_nemo:
+        #    sc.init_from_nemo_model = init_nemo
+        #elif init_pretrained:
+        #    sc.init_from_pretrained_model = init_pretrained
+        #elif init_checkpoint:
+        #    sc.init_from_ptl_ckpt - init_checkpoint
+        #else:
+        #    if specgen:
+        #        sc.init_from_pretrained_model = 'tts_en_fastpitch'
+        #    else:
+        #        sc.init_from_pretrained_model = 'tts_hifigan'
         
         sc.train_dataset = train_dataset
         sc.validation_datasets = validation_datasets
