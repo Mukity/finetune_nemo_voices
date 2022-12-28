@@ -5,6 +5,8 @@ import  omegaconf
 from omegaconf import OmegaConf, open_dict
 from nemo.collections.tts.models.base import SpectrogramGenerator, Vocoder
 
+from wavpreprocessing import logger
+
 specgen_models = []
 voc_models = []
 for model in SpectrogramGenerator.list_available_models():
@@ -62,14 +64,13 @@ def change_configuration(
         type_ = "SpectrogramGenerator"
     else:
         type_ = "Vocoder"
-    base_keys = ["train_dataset", "validation_dataset", "sup_data_path", "sample_rate"]
+    base_keys = ["train_dataset", "validation_datasets", "sup_data_path", "sample_rate"]
 
     if not config_path:
         config_path = setup_configs(specgen)
 
     cfg = OmegaConf.load(config_path)
     with open_dict(cfg):
-        #init model if conditions
         if init_from.endswith('.nemo'):
             base['init_from_nemo_model'] = init_from
         elif init_from.endswith('.ckpt'):
@@ -88,11 +89,9 @@ def change_configuration(
         
         if specgen:
             base_keys.extend(["pitch_fmin", "pitch_fmax", "pitch_std", "pitch_mean"])
-        else:
-            base_keys.extend([])
         
         missing_keys = {k for k in base_keys if k not in base}
-        assert missing_keys, f"{type_} missing the following keys {missing_keys}"
+        assert not missing_keys, f"{type_} missing the following keys {missing_keys}"
 
         if "phoneme_dict_path" not in base:
             base["phoneme_dict_path"] = phoneme_dict_path
@@ -116,8 +115,15 @@ def change_configuration(
             cfg.model.train_ds.dataloader_params.update(train_dataloader)
             cfg.model.validation_ds.dataset.update(val_dataset)
             cfg.model.validation_ds.dataloader_params.update(val_dataloader)
+
         except omegaconf.errors.ConfigAttributeError:
-            #TODO: add configuration for Vocoder and Spectrogram
+            if specgen:
+                default_cfg = SpectrogramGenerator.from_pretrained('tts_en_fastpitch').cfg
+            else:
+                default_cfg = Vocoder.from_pretrained('tts_hifigan').cfg
+            
+            cfg.model.train_ds = default_cfg.train_ds
+            cfg.model.validation_ds = default_cfg.validation_ds
             pass
 
         for model_attribute, v in model_kwargs.items():
@@ -133,6 +139,7 @@ def change_configuration(
             cfg.model.optim.pop('sched')
     save_dir = config_path.replace('.yaml', '_mod.yaml')
     OmegaConf.save(cfg, save_dir)
+    logger.info(f"{save_dir} created from {config_path}")
     return cfg
 
 def setup_configs(specgen=True):
@@ -149,47 +156,3 @@ def setup_configs(specgen=True):
             wget.download('https://raw.githubusercontent.com/nvidia/NeMo/main/examples/tts/conf/hifigan/hifigan.yaml',\
                  out='config')
     return yaml_path
-
-if __name__ == "__main__":
-    # TODO(oktai15): remove +model.text_tokenizer.add_blank_at=true when we update FastPitch checkpoint
-
-    base = {
-        "pitch_fmin":30,
-        "pitch_fmax":512,
-        "pitch_mean":121.9,
-        "pitch_std":23.1,
-        "pitch_sample_rate":0,
-        "validation_datasets": "sample_val.json",
-        "train_dataset": "sample_train.json",
-        "sup_data_path": "sup_data/sample",
-    }
-    mdl={
-        "n_speakers": 1,
-    }
-    train_dataloader={
-        "batch_size":24
-    }
-    validation_dataloader={
-        "batch_size":24
-    }
-    mdl_kwargs = {
-        "optim": {
-            "name": "adam",
-            "lr": 2e-4
-        }
-    }
-    trainer ={
-        "devices": 1,
-        "strategy": None,
-        "max_steps": 1000,
-        "check_val_every_n_epoch":25
-    }
-    change_configuration(
-        base, 
-        model=mdl,
-        train_dataloader=train_dataloader,
-        val_dataloader=validation_dataloader,
-        specgen=True,
-        trainer=trainer,
-        **mdl_kwargs
-    )
