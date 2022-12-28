@@ -254,7 +254,6 @@ def finetune_test():
         "strategy": None,
         "max_steps": 1000,
         "check_val_every_n_epoch":25,
-        "log_every_n_epoch":5
     }
     cfg = change_configuration(
         base, 
@@ -277,7 +276,7 @@ from nemo.core.config import hydra_runner
 from nemo.utils import logging
 from nemo.utils.exp_manager import exp_manager
 
-@hydra_runner(config_path="config", config_name="fastpitch_align_v1.05_mod")
+#@hydra_runner(config_path="config", config_name="fastpitch_align_v1.05_mod")
 def main(cfg):
     if hasattr(cfg.model.optim, 'sched'):
         logging.warning("You are using an optimizer scheduler while finetuning. Are you sure this is intended?")
@@ -294,3 +293,4 @@ def main(cfg):
 
 if __name__ == "__main__":
     finetune_test()
+
