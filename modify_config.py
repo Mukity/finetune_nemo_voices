@@ -46,6 +46,7 @@ model_kwargs:
     optim,
 """
 def change_configuration(
+    audio_folder_name: str,
     base: dict,
     config_path: str="",
     init_from: str="",
@@ -137,7 +138,7 @@ def change_configuration(
             cfg.trainer.pop('strategy')
         if "sched" in cfg.model.optim:
             cfg.model.optim.pop('sched')
-    save_dir = config_path.replace('.yaml', '_mod.yaml')
+    save_dir = config_path.replace('.yaml', f'_{audio_folder_name}.yaml')
     OmegaConf.save(cfg, save_dir)
     logger.info(f"{save_dir} created from {config_path}")
     return cfg
