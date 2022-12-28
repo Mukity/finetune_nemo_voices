@@ -17,13 +17,20 @@ from wavpreprocessing import logger
 from modify_config import change_configuration
 
 dataset_files = 'tts_dataset_files'
+if not os.path.exists(dataset_files):
+    os.mkdir(dataset_files)
+
 whitelist = f'{dataset_files}/lj_speech.tsv'
 if not os.path.isfile(whitelist):
-    try:
-        os.mkdir(dataset_files)
-    except FileExistsError:
-        pass
     wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/nemo_text_processing/text_normalization/en/data/whitelist/lj_speech.tsv',
+     out=dataset_files)
+
+if not os.path.exists(f'{dataset_files}/cmudict-0.7b_nv22.10'):
+    wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/$BRANCH/scripts/tts_dataset_files/cmudict-0.7b_nv22.10',
+     out=dataset_files)
+    
+if not os.path.exists(f'{dataset_files}/heteronyms-052722'):
+    wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/$BRANCH/scripts/tts_dataset_files/heteronyms-052722',
      out=dataset_files)
 
 normalizer_dict = {
