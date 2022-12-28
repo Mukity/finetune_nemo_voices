@@ -345,7 +345,7 @@ if __name__ == "__main__":
         "strategy": None,
         "max_steps": 1000,
         "check_val_every_n_epoch":25,
-        "log_every_n_epoch":5
+        "log_every_n_steps":5
     }
     main(
         'audios/6097_5_mins',
