@@ -220,51 +220,77 @@ class ModifySpectrogramConfig:
         self.out['pitch_fmax'] = pitch_max
         return pitch_mean, pitch_std, pitch_min, pitch_max
 
+
+def finetune_test():
+    base = {
+        "pitch_fmin":30,
+        "pitch_fmax":512,
+        "pitch_mean":121.9,
+        "pitch_std":23.1,
+        "sample_rate":22050,
+        "validation_datasets": "manifests/manifest_val.json",
+        "train_dataset": "manifests/manifest_train.json",
+        "sup_data_path": "sup_data/sample",
+    }
+    mdl={
+        "n_speakers": 1,
+    }
+    train_dataloader={
+        "batch_size":24,
+        "num_workers":4,
+    }
+    validation_dataloader={
+        "batch_size":24,
+        "num_workers":4,
+    }
+    mdl_kwargs = {
+        "optim": {
+            "name": "adam",
+            "lr": 2e-4
+        }
+    }
+    trainer ={
+        "devices": 1,
+        "strategy": None,
+        "max_steps": 1000,
+        "check_val_every_n_epoch":25,
+        "log_every_n_epoch":5
+    }
+    cfg = change_configuration(
+        base, 
+        model=mdl,
+        train_dataloader=train_dataloader,
+        val_dataloader=validation_dataloader,
+        specgen=True,
+        trainer=trainer,
+        **mdl_kwargs
+    )
+    logger.info("finetuning the test model")
+    main(cfg)
+
+
+import pytorch_lightning as pl
+
+from nemo.collections.common.callbacks import LogEpochTimeCallback
+from nemo.collections.tts.models import FastPitchModel
+from nemo.core.config import hydra_runner
+from nemo.utils import logging
+from nemo.utils.exp_manager import exp_manager
+
+@hydra_runner(config_path="config", config_name="fastpitch_align_v1.05_mod")
+def main(cfg):
+    if hasattr(cfg.model.optim, 'sched'):
+        logging.warning("You are using an optimizer scheduler while finetuning. Are you sure this is intended?")
+    if cfg.model.optim.lr > 1e-3 or cfg.model.optim.lr < 1e-5:
+        logging.warning("The recommended learning rate for finetuning is 2e-4")
+    trainer = pl.Trainer(**cfg.trainer)
+    exp_manager(trainer, cfg.get("exp_manager", None))
+    model = FastPitchModel(cfg=cfg.model, trainer=trainer)
+    model.maybe_init_from_pretrained_checkpoint(cfg=cfg)
+    lr_logger = pl.callbacks.LearningRateMonitor()
+    epoch_time_logger = LogEpochTimeCallback()
+    trainer.callbacks.extend([lr_logger, epoch_time_logger])
+    trainer.fit(model)
+
 if __name__ == "__main__":
-    ms = ModifySpectrogramConfig("audios/VD")
-    ms.create_manifest_files()
-    ms.pre_calculate_supplementary_data()
-    print(ms.out)
-    #base = {
-    #    "pitch_fmin":30,
-    #    "pitch_fmax":512,
-    #    "pitch_mean":121.9,
-    #    "pitch_std":23.1,
-    #    "sample_rate":22050,
-    #    "validation_datasets": "sample_val.json",
-    #    "train_dataset": "sample_train.json",
-    #    "sup_data_path": "sup_data/sample",
-    #}
-    #mdl={
-    #    "n_speakers": 1,
-    #}
-    #train_dataloader={
-    #    "batch_size":24,
-    #    "num_workers":4,
-    #}
-    #validation_dataloader={
-    #    "batch_size":24,
-    #    "num_workers":4,
-    #}
-    #mdl_kwargs = {
-    #    "optim": {
-    #        "name": "adam",
-    #        "lr": 2e-4
-    #    }
-    #}
-    #trainer ={
-    #    "devices": 1,
-    #    "strategy": None,
-    #    "max_steps": 1000,
-    #    "check_val_every_n_epoch":25,
-    #    "log_every_n_epoch":5
-    #}
-    #change_configuration(
-    #    base, 
-    #    model=mdl,
-    #    train_dataloader=train_dataloader,
-    #    val_dataloader=validation_dataloader,
-    #    specgen=True,
-    #    trainer=trainer,
-    #    **mdl_kwargs
-    #)
+    finetune_test()
