@@ -3,16 +3,16 @@ import wget
 
 import  omegaconf
 from omegaconf import OmegaConf, open_dict
-from nemo.collections.tts.models.base import SpectrogramGenerator, Vocoder
+from nemo.collections.tts.models import FastPitchModel,HifiGanModel
 
 from wavpreprocessing import logger
 
 specgen_models = []
 voc_models = []
-for model in SpectrogramGenerator.list_available_models():
+for model in FastPitchModel.list_available_models():
     specgen_models.append(model.pretrained_model_name)
 
-for model in Vocoder.list_available_models():
+for model in HifiGanModel.list_available_models():
     voc_models.append(model.pretrained_model_name)
 
 BASE_DATASET_FILES_DIR = "tts_dataset_files"
@@ -62,10 +62,10 @@ def change_configuration(
     ):
 
     if specgen:
-        type_ = "SpectrogramGenerator"
+        type_ = "FastPitchModel"
     else:
-        type_ = "Vocoder"
-    base_keys = ["train_dataset", "validation_datasets", "sup_data_path", "sample_rate"]
+        type_ = "HifiGanModel"
+    base_keys = ["train_dataset", "validation_datasets", "sample_rate"]
 
     if not config_path:
         config_path = setup_configs(specgen)
@@ -89,7 +89,7 @@ def change_configuration(
                     raise ValueError(f"{init_from} model is not in list of {type_}")
         
         if specgen:
-            base_keys.extend(["pitch_fmin", "pitch_fmax", "pitch_std", "pitch_mean"])
+            base_keys.extend(["sup_data_path", "pitch_fmin", "pitch_fmax", "pitch_std", "pitch_mean"])
         
         missing_keys = {k for k in base_keys if k not in base}
         assert not missing_keys, f"{type_} missing the following keys {missing_keys}"
@@ -106,6 +106,7 @@ def change_configuration(
         if 'max_epochs' not in cfg.trainer:
             cfg.trainer['max_epochs'] = 1000
 
+        cfg.pop('defaults')
         cfg.update(base)
         cfg.trainer.update(trainer)
         cfg.exp_manager.update(exp_manager)
@@ -119,14 +120,31 @@ def change_configuration(
 
         except omegaconf.errors.ConfigAttributeError:
             if specgen:
-                default_cfg = SpectrogramGenerator.from_pretrained('tts_en_fastpitch').cfg
+                if init_from.endswith('.nemo'):
+                    default_cfg = FastPitchModel.restore_from(init_from).cfg
+                elif init_from.endswith('.ckpt'):
+                    default_cfg = FastPitchModel.load_from_checkpoint(init_from).cfg
+                else:
+                    default_cfg = FastPitchModel.from_pretrained('tts_en_fastpitch').cfg
             else:
-                default_cfg = Vocoder.from_pretrained('tts_hifigan').cfg
-            
+                if init_from.endswith('.nemo'):
+                    default_cfg = HifiGanModel.restore_from(init_from).cfg
+                elif init_from.endswith('.ckpt'):
+                    default_cfg = HifiGanModel.load_from_checkpoint(init_from).cfg
+                else:
+                    default_cfg = HifiGanModel.from_pretrained('tts_hifigan').cfg
+
             cfg.model.train_ds = default_cfg.train_ds
             cfg.model.validation_ds = default_cfg.validation_ds
-            pass
+            cfg.model.generator = default_cfg.generator
+            cfg.model.train_ds.dataset.manifest_filepath = base['train_dataset']
+            cfg.model.validation_ds.dataset.manifest_filepath = base['validation_datasets']
 
+            cfg.model.train_ds.dataset.update(train_dataset)
+            cfg.model.train_ds.dataloader_params.update(train_dataloader)
+            cfg.model.validation_ds.dataset.update(val_dataset)
+            cfg.model.validation_ds.dataloader_params.update(val_dataloader)
+        
         for model_attribute, v in model_kwargs.items():
             for attr, b in v.items():
                 cfg.model[model_attribute][attr] = b

@@ -3,13 +3,12 @@ import pytorch_lightning as pl
 from nemo.core.config import hydra_runner
 
 from nemo.utils.exp_manager import exp_manager
-from nemo.collections.tts.models import FastPitchModel
-from nemo.collections.tts.models import HifiGanModel
+from nemo.collections.tts.models import FastPitchModel,HifiGanModel
 from nemo.collections.common.callbacks import LogEpochTimeCallback
 
 from wavpreprocessing import logger
 
-@hydra_runner(config_path="config", config_name="fastpitch_align_44100")
+@hydra_runner(config_path="config", config_name="fastpitch_align_v1.05")
 def fastpitch_finetune(cfg):
     if hasattr(cfg.model.optim, 'sched'):
         logger.warning("You are using an optimizer scheduler while finetuning. Are you sure this is intended?")
@@ -24,6 +23,7 @@ def fastpitch_finetune(cfg):
     trainer.callbacks.extend([lr_logger, epoch_time_logger])
     trainer.fit(model)
 
+@hydra_runner(config_path="config", config_name="hifigan")
 def hifigan_finetune(cfg):
     if hasattr(cfg.model.optim, 'sched'):
         logger.warning("You are using an optimizer scheduler while finetuning. Are you sure this is intended?")
@@ -38,5 +38,7 @@ def hifigan_finetune(cfg):
     trainer.callbacks.extend([lr_logger, epoch_time_logger])
     trainer.fit(model)
 
+#TODO: set argparse for fastpitch and hifigan
 if __name__=="__main__":
     fastpitch_finetune()
+    #example python fastpitch_finetune.py --config_name=<fastpitch_config_name>
