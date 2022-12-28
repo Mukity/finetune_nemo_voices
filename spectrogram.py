@@ -26,11 +26,11 @@ if not os.path.isfile(whitelist):
      out=dataset_files)
 
 if not os.path.exists(f'{dataset_files}/cmudict-0.7b_nv22.10'):
-    wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/$BRANCH/scripts/tts_dataset_files/cmudict-0.7b_nv22.10',
+    wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/scripts/tts_dataset_files/cmudict-0.7b_nv22.10',
      out=dataset_files)
     
 if not os.path.exists(f'{dataset_files}/heteronyms-052722'):
-    wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/$BRANCH/scripts/tts_dataset_files/heteronyms-052722',
+    wget.download('https://raw.githubusercontent.com/NVIDIA/NeMo/main/scripts/tts_dataset_files/heteronyms-052722',
      out=dataset_files)
 
 normalizer_dict = {
