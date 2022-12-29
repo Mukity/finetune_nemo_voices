@@ -103,7 +103,7 @@ def change_configuration(
             base["whitelist_path"] = whitelist_path
         
         if "exp_dir" not in exp_manager:
-            exp_manager['exp_dir'] = f"models/finetuned"
+            exp_manager['exp_dir'] = f"models/finetuned/{audio_folder_name}"
         if 'max_epochs' not in cfg.trainer:
             cfg.trainer['max_epochs'] = 1000
 
