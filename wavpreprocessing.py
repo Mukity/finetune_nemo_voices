@@ -3,7 +3,8 @@ import shutil
 import argparse
 
 from pydub import AudioSegment
-
+from helpers import get_logger
+logger=get_logger(__file__.split('.')[0])
 
 class WavPreprocessing:
     def __init__(self, audio_folder: str=None, compressed: str=None):

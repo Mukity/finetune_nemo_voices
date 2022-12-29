@@ -119,32 +119,31 @@ def change_configuration(
             cfg.model.validation_ds.dataloader_params.update(val_dataloader)
 
         except omegaconf.errors.ConfigAttributeError:
-            pass
-            #if specgen:
-            #    if init_from.endswith('.nemo'):
-            #        default_cfg = FastPitchModel.restore_from(init_from).cfg
-            #    elif init_from.endswith('.ckpt'):
-            #        default_cfg = FastPitchModel.load_from_checkpoint(init_from).cfg
-            #    else:
-            #        default_cfg = FastPitchModel.from_pretrained('tts_en_fastpitch').cfg
-            #else:
-            #    if init_from.endswith('.nemo'):
-            #        default_cfg = HifiGanModel.restore_from(init_from).cfg
-            #    elif init_from.endswith('.ckpt'):
-            #        default_cfg = HifiGanModel.load_from_checkpoint(init_from).cfg
-            #    else:
-            #        default_cfg = HifiGanModel.from_pretrained('tts_hifigan').cfg
+            if specgen:
+                if init_from.endswith('.nemo'):
+                    default_cfg = FastPitchModel.restore_from(init_from).cfg
+                elif init_from.endswith('.ckpt'):
+                    default_cfg = FastPitchModel.load_from_checkpoint(init_from).cfg
+                else:
+                    default_cfg = FastPitchModel.from_pretrained('tts_en_fastpitch').cfg
+            else:
+                if init_from.endswith('.nemo'):
+                    default_cfg = HifiGanModel.restore_from(init_from).cfg
+                elif init_from.endswith('.ckpt'):
+                    default_cfg = HifiGanModel.load_from_checkpoint(init_from).cfg
+                else:
+                    default_cfg = HifiGanModel.from_pretrained('tts_hifigan').cfg
 
-            #cfg.model.train_ds = default_cfg.train_ds
-            #cfg.model.validation_ds = default_cfg.validation_ds
-            #cfg.model.generator = default_cfg.generator
-            #cfg.model.train_ds.dataset.manifest_filepath = base['train_dataset']
-            #cfg.model.validation_ds.dataset.manifest_filepath = base['validation_datasets']
+            cfg.model.train_ds = default_cfg.train_ds
+            cfg.model.validation_ds = default_cfg.validation_ds
+            cfg.model.generator = default_cfg.generator
+            cfg.model.train_ds.dataset.manifest_filepath = base['train_dataset']
+            cfg.model.validation_ds.dataset.manifest_filepath = base['validation_datasets']
 
-            #cfg.model.train_ds.dataset.update(train_dataset)
-            #cfg.model.train_ds.dataloader_params.update(train_dataloader)
-            #cfg.model.validation_ds.dataset.update(val_dataset)
-            #cfg.model.validation_ds.dataloader_params.update(val_dataloader)
+            cfg.model.train_ds.dataset.update(train_dataset)
+            cfg.model.train_ds.dataloader_params.update(train_dataloader)
+            cfg.model.validation_ds.dataset.update(val_dataset)
+            cfg.model.validation_ds.dataloader_params.update(val_dataloader)
         
         for model_attribute, v in model_kwargs.items():
             for attr, b in v.items():
