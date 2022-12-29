@@ -4,6 +4,7 @@ import numpy as np
 import soundfile as sf
 
 import torch
+import argparse
 
 from nemo.collections.tts.models import FastPitchModel
 from nemo.collections.tts.torch.helpers import BetaBinomialInterpolator
@@ -17,7 +18,6 @@ class ModifyVocoderConfig:
             manifest_name: str,
             spec_model: str,
             manifest_folder: str=None,
-            pretrained=True
         ):
         self.manifest_folder = manifest_folder or f"manifests/{manifest_name}"
         self.manifest_name = manifest_name
@@ -27,15 +27,12 @@ class ModifyVocoderConfig:
         self.manifest_paths = [f"{self.manifest_folder}/{f}" for f in self.manifest_names]
         self.out = {}
 
-        if pretrained:
-            self.spec_model = FastPitchModel.from_pretrained(spec_model)
+        if spec_model.endswith('.nemo'):
+            self.spec_model = FastPitchModel.restore_from(spec_model)
+        elif spec_model.endswith('.ckpt'):
+            self.spec_model = FastPitchModel.load_from_checkpoint(spec_model)
         else:
-            if spec_model.endswith('.nemo'):
-                self.spec_model = FastPitchModel.restore_from(spec_model)
-            elif spec_model.endswith('.ckpt'):
-                self.spec_model = FastPitchModel.load_from_checkpoint(spec_model)
-            else:
-                raise ValueError("The spec_model should end with .ckpt or .nemo when from file=False")
+            self.spec_model = FastPitchModel.from_pretrained(spec_model)
     
     def _load_wav(self, audio_file):
         with sf.SoundFile(audio_file, 'r') as f:
@@ -104,30 +101,49 @@ class ModifyVocoderConfig:
                 f.write(json.dumps(r) + '\n')
         return manifest_modified
 
-def main(
-        audio_folder_name: str,
-        spec_model: str,
-        sample_rate: int,
-        manifest_folder: str=None,
-        config_path: str="",
-        init_from: str="",
-        model_params={},
-        trainer={},
-        exp_manager={},
-        train_dataset={},
-        train_dataloader={},
-        val_dataset={},
-        val_dataloader={},
-        pretrained=True,
-        **model_kwargs
-    ):
-    mvc = ModifyVocoderConfig(audio_folder_name, spec_model, manifest_folder,pretrained)
+
+def argparser():
+    parser = argparse.ArgumentParser(description="modify argument for vocoder")
+    parser.add_argument('-audio_folder', required=True, type=str)
+    parser.add_argument('-spec_model', required=True, type=str)
+    parser.add_argument('-sample_rate', required=True, type=int)
+    parser.add_argument('-manifest_folder', type=str, default='')
+    parser.add_argument('-config_path', default='', type=str)
+    parser.add_argument('-init_from', default='', type=str)
+    parser.add_argument('-model_params', default={}, type=json.loads)
+    parser.add_argument('-trainer', default={}, type=json.loads)
+    parser.add_argument('-exp_manager', default={}, type=json.loads)
+    parser.add_argument('-train_dataset', default={}, type=json.loads)
+    parser.add_argument('-train_dataloader', default={}, type=json.loads)
+    parser.add_argument('-val_dataset', default={}, type=json.loads)
+    parser.add_argument('-val_dataloader', default={}, type=json.loads)
+    parser.add_argument('-model_kwargs', default={}, type=json.loads)
+    return parser.parse_args()
+
+def main():
+    args = argparser()
+    audio_folder = args.audio_folder
+    spec_model = args.spec_model
+    sample_rate = args.sample_rate
+    manifest_folder = args.manifest_folder
+    config_path = args.config_path
+    init_from = args.init_from
+    model_params = args.model_params
+    trainer = args.trainer
+    exp_manager = args.exp_manager
+    train_dataset = args.train_dataset
+    train_dataloader = args.train_dataloader
+    val_dataset = args.val_dataset
+    val_dataloader = args.val_dataloader
+    model_kwargs = args.model_kwargs
+
+    mvc = ModifyVocoderConfig(audio_folder, spec_model, manifest_folder)
     mvc.make_manifests()
     base_dict = mvc.out
     base_dict['sample_rate'] = sample_rate
 
-    change_configuration(
-        audio_folder_name,
+    cfg = change_configuration(
+        audio_folder,
         base_dict,
         config_path,
         init_from,
@@ -139,51 +155,10 @@ def main(
         val_dataset,
         val_dataloader,
         specgen=False,
-        **model_kwargs
+        model_kwargs=model_kwargs,
     )
+    return cfg
 
 if __name__ == '__main__':
-    train_dataloader = {
-        "batch_size":32
-    }
-    train_dataset = {
-        "min_duration": 0,
-        "max_duration":100
-    }
-    val_dataloader = {
-        "batch_size":32
-    }
-    val_dataset = {
-        "min_duration": 0,
-        "max_duration":100
-    }
-    model_params ={
-        "max_steps": 1000,
-    }
-    exp_mng = {
-        "exp_dir": "abc"
-    }
-    tr ={
-        "check_val_every_n_epoch": 10
-    }
-    model_kwargs = {
-        "optim": {
-            "name": "adam",
-            "lr": 0.00001
-        }
-    }
-    main(
-        audio_folder_name="6097_5_mins",
-        sample_rate=22050,
-        spec_model="models/pretrained/tts_en_fastpitch.nemo",
-        pretrained=False,
-        train_dataloader=train_dataloader,
-        train_dataset=train_dataset,
-        val_dataloader=val_dataloader,
-        val_dataset=val_dataset,
-        model_params=model_params,
-        exp_manager=exp_mng,
-        trainer=tr,
-        init_from="models/pretrained/tts_hifigan.nemo",
-        **model_kwargs
-    )
+    main()
+    #py vocoder.py -train_dataloader '{"batch_size":32}' -train_dataset '{"min_duration":0,"max_duration":100}' -val_dataloader '{"batch_size":32}' -val_dataset '{"min_duration":0,"max_duration":100}' -model_params '{"max_steps":1000}' -exp_manager '{"exp_dir":"abc"}' -trainer '{"check_val_every_n_epoch":10}' -model_kwargs '{"optim":{"lr": 0.00001}}'

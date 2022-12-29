@@ -1,25 +1,9 @@
 import os
-import sys
-
-import argparse
 import shutil
+import argparse
 
 from pydub import AudioSegment
 
-import logging
-
-DEBUG_LEVEL = logging.getLevelName(os.environ.get('DEBUG_LEVEL', 'INFO'))
-def get_logger(name):
-    logger = logging.getLogger(name)
-    if not logger.handlers:
-        h = logging.StreamHandler(sys.stderr)
-        h.setFormatter(logging.Formatter("%(asctime)s: func-%(funcName)s[%(lineno)s]: %(levelname)s:  %(message)s"))
-        logger.addHandler(h)
-    logger.setLevel(DEBUG_LEVEL)
-    logger.propagate = False
-    return logger
-
-logger = get_logger(__name__)
 
 class WavPreprocessing:
     def __init__(self, audio_folder: str=None, compressed: str=None):

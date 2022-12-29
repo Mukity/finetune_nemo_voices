@@ -2,6 +2,7 @@ import os
 import wget
 import json
 import shutil
+import argparse
 
 import torch
 import librosa
@@ -10,11 +11,11 @@ from nemo.collections.tts.torch.data import TTSDataset
 from nemo_text_processing.text_normalization.normalize import Normalizer
 from nemo.collections.common.tokenizers.text_to_speech.tts_tokenizers import EnglishCharsTokenizer
 
-#from tqdm.notebook import tqdm
 from tqdm import tqdm
 
-from wavpreprocessing import logger
 from modify_config import change_configuration
+from helpers import get_logger
+logger = get_logger(__file__.split('.')[0])
 
 dataset_files = 'tts_dataset_files'
 if not os.path.exists(dataset_files):
@@ -224,23 +225,43 @@ class ModifySpectrogramConfig:
         
         return pitch_mean, pitch_std, pitch_min, pitch_max
 
-def main(
-        audio_folder,
-        config_path: str="",
-        manifest_root: str="manifests",
-        sup_data_root: str="sup_data",
-        text_normalizer_call_kwargs={},
-        init_from: str="",
-        model_params: dict={},
-        trainer: dict={},
-        exp_manager: dict={},
-        train_dataset: dict={},
-        train_dataloader: dict={},
-        val_dataset: dict={},
-        val_dataloader: dict={},
-        remove_sup_data: bool=True,
-        **model_kwargs
-    ):
+def argparser():
+    parser = argparse.ArgumentParser(description="modify spectrogram configs and save to file")
+    parser.add_argument('-audio_folder', required=True, type=str)
+    parser.add_argument('-config_path', type=str, default='')
+    parser.add_argument('-manifest_root', type=str, default="manifests")
+    parser.add_argument('-sup_data_root', type=str, default="sup_data")
+    parser.add_argument('-text_normalizer_call_kwargs', type=json.loads, default={})
+    parser.add_argument('-init_from', type=str, default='')
+    parser.add_argument('-model_params', type=json.loads, default={})
+    parser.add_argument('-trainer', type=json.loads, default={})
+    parser.add_argument('-exp_manager', type=json.loads, default={})
+    parser.add_argument('-train_dataset', type=json.loads, default={})
+    parser.add_argument('-train_dataloader', type=json.loads, default={})
+    parser.add_argument('-val_dataset', type=json.loads, default={})
+    parser.add_argument('-val_dataloader', type=json.loads, default={})
+    parser.add_argument('-remove_sup_data', type=bool, default=False)
+    parser.add_argument('-model_kwargs', type=json.loads, default={})
+    return parser.parse_args()
+
+def main():
+    args = argparser()
+    audio_folder = args.audio_folder
+    config_path = args.config_path
+    manifest_root = args.manifest_root
+    sup_data_root = args.sup_data_root
+    text_normalizer_call_kwargs = args.text_normalizer_call_kwargs
+    init_from = args.init_from
+    model_params = args.model_params
+    trainer = args.trainer
+    exp_manager = args.exp_manager
+    train_dataset = args.train_dataset
+    train_dataloader = args.train_dataloader
+    val_dataset = args.val_dataset
+    val_dataloader = args.val_dataloader
+    remove_sup_data = args.remove_sup_data
+    model_kwargs = args.model_kwargs
+
     msc = ModifySpectrogramConfig(
         audio_folder,
         manifest_root,
@@ -253,8 +274,6 @@ def main(
     max_duration = base_keys.pop('max_duration')
     min_duration = base_keys.pop('min_duration')
     logger.info(base_keys)
-    #other_base_keys
-    #n_mel_channels, n_window_size, n_window_stride, n_fft, lowfreq, highfreq, window, sup_data_types, name
     
     train_dataset = {
         "min_duration": min_duration,
@@ -276,89 +295,9 @@ def main(
         train_dataloader=train_dataloader,
         val_dataset=val_dataset,
         val_dataloader=val_dataloader,
-        **model_kwargs
+        model_kwargs=model_kwargs,
     )
-
-
-def finetune_test():
-    base = {
-        "pitch_fmin":30,
-        "pitch_fmax":512,
-        "pitch_mean":121.9,
-        "pitch_std":23.1,
-        "sample_rate":22050,
-        "validation_datasets": "manifests/manifest_val.json",
-        "train_dataset": "manifests/manifest_train.json",
-        "sup_data_path": "sup_data/sample",
-    }
-
-    mdl={
-        "n_speakers": 1,
-    }
-    train_dataloader={
-        "batch_size":24,
-        "num_workers":4,
-    }
-    validation_dataloader={
-        "batch_size":24,
-        "num_workers":4,
-    }
-    mdl_kwargs = {
-        "optim": {
-            "name": "adam",
-            "lr": 2e-4
-        }
-    }
-    trainer ={
-        "devices": 1,
-        "strategy": None,
-        "max_steps": 1000,
-        "check_val_every_n_epoch":25,
-        "log_every_n_epoch":5
-    }
-    
-    change_configuration(
-        base, 
-        model=mdl,
-        train_dataloader=train_dataloader,
-        val_dataloader=validation_dataloader,
-        specgen=True,
-        trainer=trainer,
-        **mdl_kwargs
-    )
-    logger.info("finetuning the test model")
-
 
 if __name__ == "__main__":
-    mdl={
-        "n_speakers": 1,
-    }
-    train_dataloader={
-        "batch_size":24,
-        "num_workers":4,
-    }
-    validation_dataloader={
-        "batch_size":24,
-        "num_workers":4,
-    }
-    mdl_kwargs = {
-        "optim": {
-            "name": "adam",
-            "lr": 2e-4
-        }
-    }
-    trainer ={
-        "devices": 1,
-        "strategy": None,
-        "max_steps": 1000,
-        "check_val_every_n_epoch":25,
-        "log_every_n_steps":5
-    }
-    main(
-        'audios/6097_5_mins',
-        remove_sup_data=False,
-        model_params=mdl,
-        train_dataloader=train_dataloader,
-        trainer=trainer,
-        **mdl_kwargs,
-        )
+    main()
+    #py spectrogram.py -audio_folder audios/6097_5_mins -model_params '{"n_speakers":1}' -train_dataloader '{"batch_size":24,"num_workers":4}' -val_dataloader '{"batch_size":24,"num_workers":4}' -model_kwargs '{"optim":{"name":"adam","lr":2e-4}}' -trainer '{"devices":1,"strategy":null,"max_steps":1000,"check_val_every_n_epoch":25,"log_every_n_steps":5}'

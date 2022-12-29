@@ -5,7 +5,8 @@ import  omegaconf
 from omegaconf import OmegaConf, open_dict
 from nemo.collections.tts.models import FastPitchModel,HifiGanModel
 
-from wavpreprocessing import logger
+from helpers import get_logger, load_yaml
+logger = get_logger(__file__.split('.')[0])
 
 specgen_models = []
 voc_models = []
@@ -50,15 +51,15 @@ def change_configuration(
     base: dict,
     config_path: str="",
     init_from: str="",
-    model={},
-    trainer={},
-    exp_manager={},
-    train_dataset={},
-    train_dataloader={},
-    val_dataset={},
-    val_dataloader={},
+    model: dict={},
+    trainer: dict={},
+    exp_manager: dict={},
+    train_dataset: dict={},
+    train_dataloader: dict={},
+    val_dataset: dict={},
+    val_dataloader: dict={},
     specgen=True,
-    **model_kwargs
+    model_kwargs: dict={},
     ):
 
     if specgen:
@@ -70,7 +71,7 @@ def change_configuration(
     if not config_path:
         config_path = setup_configs(specgen)
 
-    cfg = OmegaConf.load(config_path)
+    cfg = load_yaml(config_path)
     with open_dict(cfg):
         if init_from.endswith('.nemo'):
             base['init_from_nemo_model'] = init_from
@@ -106,7 +107,6 @@ def change_configuration(
         if 'max_epochs' not in cfg.trainer:
             cfg.trainer['max_epochs'] = 1000
 
-        cfg.pop('defaults')
         cfg.update(base)
         cfg.trainer.update(trainer)
         cfg.exp_manager.update(exp_manager)
@@ -119,31 +119,32 @@ def change_configuration(
             cfg.model.validation_ds.dataloader_params.update(val_dataloader)
 
         except omegaconf.errors.ConfigAttributeError:
-            if specgen:
-                if init_from.endswith('.nemo'):
-                    default_cfg = FastPitchModel.restore_from(init_from).cfg
-                elif init_from.endswith('.ckpt'):
-                    default_cfg = FastPitchModel.load_from_checkpoint(init_from).cfg
-                else:
-                    default_cfg = FastPitchModel.from_pretrained('tts_en_fastpitch').cfg
-            else:
-                if init_from.endswith('.nemo'):
-                    default_cfg = HifiGanModel.restore_from(init_from).cfg
-                elif init_from.endswith('.ckpt'):
-                    default_cfg = HifiGanModel.load_from_checkpoint(init_from).cfg
-                else:
-                    default_cfg = HifiGanModel.from_pretrained('tts_hifigan').cfg
+            pass
+            #if specgen:
+            #    if init_from.endswith('.nemo'):
+            #        default_cfg = FastPitchModel.restore_from(init_from).cfg
+            #    elif init_from.endswith('.ckpt'):
+            #        default_cfg = FastPitchModel.load_from_checkpoint(init_from).cfg
+            #    else:
+            #        default_cfg = FastPitchModel.from_pretrained('tts_en_fastpitch').cfg
+            #else:
+            #    if init_from.endswith('.nemo'):
+            #        default_cfg = HifiGanModel.restore_from(init_from).cfg
+            #    elif init_from.endswith('.ckpt'):
+            #        default_cfg = HifiGanModel.load_from_checkpoint(init_from).cfg
+            #    else:
+            #        default_cfg = HifiGanModel.from_pretrained('tts_hifigan').cfg
 
-            cfg.model.train_ds = default_cfg.train_ds
-            cfg.model.validation_ds = default_cfg.validation_ds
-            cfg.model.generator = default_cfg.generator
-            cfg.model.train_ds.dataset.manifest_filepath = base['train_dataset']
-            cfg.model.validation_ds.dataset.manifest_filepath = base['validation_datasets']
+            #cfg.model.train_ds = default_cfg.train_ds
+            #cfg.model.validation_ds = default_cfg.validation_ds
+            #cfg.model.generator = default_cfg.generator
+            #cfg.model.train_ds.dataset.manifest_filepath = base['train_dataset']
+            #cfg.model.validation_ds.dataset.manifest_filepath = base['validation_datasets']
 
-            cfg.model.train_ds.dataset.update(train_dataset)
-            cfg.model.train_ds.dataloader_params.update(train_dataloader)
-            cfg.model.validation_ds.dataset.update(val_dataset)
-            cfg.model.validation_ds.dataloader_params.update(val_dataloader)
+            #cfg.model.train_ds.dataset.update(train_dataset)
+            #cfg.model.train_ds.dataloader_params.update(train_dataloader)
+            #cfg.model.validation_ds.dataset.update(val_dataset)
+            #cfg.model.validation_ds.dataloader_params.update(val_dataloader)
         
         for model_attribute, v in model_kwargs.items():
             for attr, b in v.items():
