@@ -48,16 +48,18 @@ model:
     betas:
     - 0.8
     - 0.99
-  max_steps: 1000
+  max_steps: 2500000
   l1_loss_factor: 45
   denoise_strength: 0.0025
+  max_epochs: 1000
   train_ds:
     dataset:
-      _target_: nemo.collections.tts.data.datalayers.MelAudioDataset
+      _target_: nemo.collections.tts.torch.data.VocoderDataset
       manifest_filepath: manifests/VD/voc_VD_train.json
       min_duration: 0
       n_segments: 8192
       max_duration: 100
+      sample_rate: 48000
     dataloader_params:
       drop_last: false
       shuffle: true
@@ -65,11 +67,12 @@ model:
       num_workers: 4
   validation_ds:
     dataset:
-      _target_: nemo.collections.tts.data.datalayers.MelAudioDataset
+      _target_: nemo.collections.tts.torch.data.VocoderDataset
       manifest_filepath: manifests/VD/voc_VD_val.json
       min_duration: 0
       n_segments: 66150
       max_duration: 100
+      sample_rate: 48000
     dataloader_params:
       drop_last: false
       shuffle: false
