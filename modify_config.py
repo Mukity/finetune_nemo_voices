@@ -5,7 +5,7 @@ import  omegaconf
 from omegaconf import OmegaConf, open_dict
 from nemo.collections.tts.models import FastPitchModel,HifiGanModel
 
-from helpers import get_logger, load_yaml
+from helpers import get_logger, load_yaml, modify_targets
 logger = get_logger(__file__.split('.')[0])
 
 specgen_models = []
@@ -156,6 +156,7 @@ def change_configuration(
             cfg.trainer.pop('strategy')
         if "sched" in cfg.model.optim:
             cfg.model.optim.pop('sched')
+    modify_targets(cfg)
     save_dir = config_path.replace('.yaml', f'_{audio_folder_name}.yaml')
     OmegaConf.save(cfg, save_dir)
     logger.info(f"{save_dir} created from {config_path}")
