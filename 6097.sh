@@ -1,9 +1,0 @@
-python spectrogram.py -audio_folder audios/6097_5_mins -model_params '{"n_speakers":1}' -train_dataloader '{"batch_size":16,"num_workers":4}' -val_dataloader '{"batch_size":16,"num_workers":4}' -model_kwargs '{"optim":{"name":"adam","lr":2e-4}}' -trainer '{"devices":1,"strategy":null,"max_epochs":1000,"check_val_every_n_epoch":10,"log_every_n_steps":5}'
-python vocoder.py -train_dataloader '{"batch_size":16,"num_workers":4}' -train_dataset '{"min_duration":0,"max_duration":100,"sample_rate":22050}' -val_dataloader '{"batch_size":16,"num_workers":4}' -val_dataset '{"min_duration":0,"max_duration":100,"sample_rate":22050}' -model_params '{"max_epochs":1000}' -trainer '{"check_val_every_n_epoch":10}' -model_kwargs '{"optim":{"lr": 0.00001}}' -sample_rate 22050 -audio_folder 6097_5_mins -spec_model tts_en_fastpitch
-python finetune.py -mode specgen -config_name fastpitch_align_v1.05_6097_5_mins
-python finetune.py -mode vocoder -config_name hifigan_6097_5_mins
-
-python spectrogram.py -audio_folder audios/VD -model_params '{"n_speakers":1}' -train_dataloader '{"batch_size":16,"num_workers":4}' -val_dataloader '{"batch_size":16,"num_workers":4}' -model_kwargs '{"optim":{"name":"adam","lr":2e-4}}' -trainer '{"devices":1,"strategy":null,"max_epochs":1000,"check_val_every_n_epoch":10,"log_every_n_steps":5}'
-python vocoder.py -train_dataloader '{"batch_size":16,"num_workers":4}' -train_dataset '{"min_duration":0,"max_duration":100,"sample_rate":22050}' -val_dataloader '{"batch_size":16,"num_workers":4}' -val_dataset '{"min_duration":0,"max_duration":100,"sample_rate":22050}' -model_params '{"max_epochs":1000}' -trainer '{"check_val_every_n_epoch":10}' -model_kwargs '{"optim":{"lr": 0.00001}}' -sample_rate 22050 -audio_folder VD -spec_model tts_en_fastpitch
-python finetune.py -mode specgen -config_name fastpitch_align_v1.05_VD
-python finetune.py -mode vocoder -config_name hifigan_VD

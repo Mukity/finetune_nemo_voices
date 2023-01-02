@@ -65,7 +65,7 @@ class ModifySpectrogramConfig:
         text_normalizer_call_kwargs: dict={},
         ) -> None:
 
-        self.audio_folder = audio_folder
+        self.audio_folder = f"audios/{audio_folder}"
         self.manifest_name = audio_folder.split('/')[-1]
         self.manifest_folder = f"{manifest_root}/{self.manifest_name}"
         self.sup_data_path = f"{sup_data_root}/{self.manifest_name}"
@@ -165,14 +165,18 @@ class ModifySpectrogramConfig:
     def pre_calculate_supplementary_data(
         self,
         sup_data_path: str="",
-        sample_rate: int=22050,
+        sample_rate: int=None,
         manifest_folder: str="",
         manifest_name: str="",
         remove_sup_data: bool=True,
         **kwargs
         ) -> tuple:
         sup_data_path = sup_data_path or self.sup_data_path
-        sample_rate = self.out.get('sample_rate') or sample_rate
+
+        if sample_rate:
+            self.out['sample_rate'] = sample_rate
+        else:
+            sample_rate = self.out.get('sample_rate')
 
         manifest_folder = manifest_folder or self.manifest_folder
         manifest_filename = manifest_name or self.manifest_name
@@ -242,26 +246,29 @@ def argparser():
     parser.add_argument('-val_dataloader', type=json.loads, default={})
     parser.add_argument('-remove_sup_data', type=bool, default=False)
     parser.add_argument('-model_kwargs', type=json.loads, default={})
+    parser.add_argument('-default_samplerate', type=bool, default=False)
     return parser.parse_args()
 
 def main():
     args = argparser()
+    #-model_params '{"n_speakers":1}' -train_dataloader '{"batch_size":16,"num_workers":4}' -val_dataloader '{"batch_size":16,"num_workers":4}' -model_kwargs '{"optim":{"name":"adam","lr":2e-4}}' -trainer '{"devices":1,"strategy":null,"max_epochs":1000,"check_val_every_n_epoch":10,"log_every_n_steps":5}'
     audio_folder = args.audio_folder
     config_path = args.config_path
     manifest_root = args.manifest_root
     sup_data_root = args.sup_data_root
     text_normalizer_call_kwargs = args.text_normalizer_call_kwargs
     init_from = args.init_from
-    model_params = args.model_params
-    trainer = args.trainer
+    model_params = dict({"n_speakers":1}, **args.model_params)
+    trainer = dict({"devices":1,"strategy":None,"max_epochs":1000,"check_val_every_n_epoch":10,"log_every_n_steps":5}, **args.trainer)
     exp_manager = args.exp_manager
     train_dataset = args.train_dataset
-    train_dataloader = args.train_dataloader
+    train_dataloader = dict({"batch_size":16,"num_workers":4}, **args.train_dataloader)
     val_dataset = args.val_dataset
-    val_dataloader = args.val_dataloader
+    val_dataloader = dict({"batch_size":16,"num_workers":4}, **args.val_dataloader)
     remove_sup_data = args.remove_sup_data
-    model_kwargs = args.model_kwargs
-
+    model_kwargs = dict({"optim":{"name":"adam","lr":2e-4}}, **args.model_kwargs)
+    default_sr = args.default_samplerate
+    
     msc = ModifySpectrogramConfig(
         audio_folder,
         manifest_root,
@@ -269,7 +276,11 @@ def main():
         text_normalizer_call_kwargs,
     )
     msc.create_manifest_files()
-    msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data)
+    if default_sr:
+        msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data, sample_rate=22050)
+    else:
+        msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data)
+
     base_keys = msc.out
     max_duration = base_keys.pop('max_duration')
     min_duration = base_keys.pop('min_duration')
@@ -300,4 +311,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #py spectrogram.py -audio_folder audios/6097_5_mins -model_params '{"n_speakers":1}' -train_dataloader '{"batch_size":24,"num_workers":4}' -val_dataloader '{"batch_size":24,"num_workers":4}' -model_kwargs '{"optim":{"name":"adam","lr":2e-4}}' -trainer '{"devices":1,"strategy":null,"max_steps":1000,"check_val_every_n_epoch":25,"log_every_n_steps":5}'
+    #example  py spectrogram.py -audio_folder VD

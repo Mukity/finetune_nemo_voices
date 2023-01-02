@@ -106,7 +106,7 @@ def argparser():
     parser = argparse.ArgumentParser(description="modify argument for vocoder")
     parser.add_argument('-audio_folder', required=True, type=str)
     parser.add_argument('-spec_model', required=True, type=str)
-    parser.add_argument('-sample_rate', required=True, type=int)
+    parser.add_argument('-sample_rate', required=False, type=int, default=22050)
     parser.add_argument('-manifest_folder', type=str, default='')
     parser.add_argument('-config_path', default='', type=str)
     parser.add_argument('-init_from', default='', type=str)
@@ -128,14 +128,14 @@ def main():
     manifest_folder = args.manifest_folder
     config_path = args.config_path
     init_from = args.init_from
-    model_params = args.model_params
-    trainer = args.trainer
+    model_params = {**{"max_epochs":1000}, **args.model_params}
+    trainer = {**{"check_val_every_n_epoch":10}, **args.trainer}
     exp_manager = args.exp_manager
-    train_dataset = args.train_dataset
-    train_dataloader = args.train_dataloader
-    val_dataset = args.val_dataset
-    val_dataloader = args.val_dataloader
-    model_kwargs = args.model_kwargs
+    train_dataset = {**{"min_duration":0,"max_duration":100,"sample_rate":22050}, **args.train_dataset}
+    train_dataloader = {**{"batch_size":16,"num_workers":4}, **args.train_dataloader}
+    val_dataset = {**{"min_duration":0,"max_duration":100,"sample_rate":22050}, **args.val_dataset}
+    val_dataloader = {**{"batch_size":16,"num_workers":4}, **args.val_dataloader}
+    model_kwargs = {**{"optim":{"lr": 0.00001}}, **args.model_kwargs}
 
     mvc = ModifyVocoderConfig(audio_folder, spec_model, manifest_folder)
     mvc.make_manifests()
@@ -161,4 +161,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #py vocoder.py -train_dataloader '{"batch_size":32}' -train_dataset '{"min_duration":0,"max_duration":100}' -val_dataloader '{"batch_size":32}' -val_dataset '{"min_duration":0,"max_duration":100}' -model_params '{"max_steps":1000}' -exp_manager '{"exp_dir":"abc"}' -trainer '{"check_val_every_n_epoch":10}' -model_kwargs '{"optim":{"lr": 0.00001}}'
+    #example py vocoder.py -audio_folder VD -spec_model tts_en_fastpitch
