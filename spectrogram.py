@@ -247,7 +247,13 @@ def argparser():
     parser.add_argument('-remove_sup_data', type=bool, default=False)
     parser.add_argument('-model_kwargs', type=json.loads, default={})
     parser.add_argument('-default_samplerate', type=bool, default=False)
-    return parser.parse_args()
+    parser.add_argument('-librispeech', type=bool, default=False)
+    parser.add_argument('-speaker_id', type=int)
+    args = parser.parse_args()
+    
+    if args.librispeech and not args.speaker_id:
+        parser.error('librispeech audio requires speaker_id to be given')
+    return 
 
 def main():
     args = argparser()
@@ -267,6 +273,8 @@ def main():
     remove_sup_data = args.remove_sup_data
     model_kwargs = dict({"optim":{"name":"adam","lr":2e-4}}, **args.model_kwargs)
     default_sr = args.default_samplerate
+    librispeech = args.librispeech
+    speaker_id = args.speaker_id
     
     msc = ModifySpectrogramConfig(
         audio_folder,
@@ -274,7 +282,10 @@ def main():
         sup_data_root,
         text_normalizer_call_kwargs,
     )
-    msc.create_manifest_files()
+    if librispeech:
+        msc.create_manifest_files(librispeech=True, speaker_id=speaker_id)
+    else:
+        msc.create_manifest_files()
     if default_sr:
         msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data, sample_rate=22050)
     else:
