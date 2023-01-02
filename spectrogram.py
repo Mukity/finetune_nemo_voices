@@ -246,7 +246,7 @@ def argparser():
     parser.add_argument('-val_dataloader', type=json.loads, default={})
     parser.add_argument('-remove_sup_data', type=bool, default=False)
     parser.add_argument('-model_kwargs', type=json.loads, default={})
-    parser.add_argument('-default_samplerate', type=bool, default=False)
+    parser.add_argument('-default_sr', type=bool, default=True)
     parser.add_argument('-librispeech', type=bool, default=False)
     parser.add_argument('-speaker_id', type=int)
     args = parser.parse_args()
@@ -272,7 +272,7 @@ def main():
     val_dataloader = dict({"batch_size":16,"num_workers":4}, **args.val_dataloader)
     remove_sup_data = args.remove_sup_data
     model_kwargs = dict({"optim":{"name":"adam","lr":2e-4}}, **args.model_kwargs)
-    default_sr = args.default_samplerate
+    default_sr = args.default_sr
     librispeech = args.librispeech
     speaker_id = args.speaker_id
     
@@ -282,10 +282,12 @@ def main():
         sup_data_root,
         text_normalizer_call_kwargs,
     )
+    
     if librispeech:
         msc.create_manifest_files(librispeech=True, speaker_id=speaker_id)
     else:
         msc.create_manifest_files()
+    
     if default_sr:
         msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data, sample_rate=22050)
     else:
