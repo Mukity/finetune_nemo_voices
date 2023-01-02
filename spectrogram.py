@@ -251,7 +251,6 @@ def argparser():
 
 def main():
     args = argparser()
-    #-model_params '{"n_speakers":1}' -train_dataloader '{"batch_size":16,"num_workers":4}' -val_dataloader '{"batch_size":16,"num_workers":4}' -model_kwargs '{"optim":{"name":"adam","lr":2e-4}}' -trainer '{"devices":1,"strategy":null,"max_epochs":1000,"check_val_every_n_epoch":10,"log_every_n_steps":5}'
     audio_folder = args.audio_folder
     config_path = args.config_path
     manifest_root = args.manifest_root
@@ -259,7 +258,7 @@ def main():
     text_normalizer_call_kwargs = args.text_normalizer_call_kwargs
     init_from = args.init_from
     model_params = dict({"n_speakers":1}, **args.model_params)
-    trainer = dict({"devices":1,"strategy":None,"max_epochs":1000,"check_val_every_n_epoch":10,"log_every_n_steps":5}, **args.trainer)
+    trainer = dict({"devices":1,"strategy":None,"max_steps":1000,"check_val_every_n_epoch":10,"log_every_n_steps":10}, **args.trainer)
     exp_manager = args.exp_manager
     train_dataset = args.train_dataset
     train_dataloader = dict({"batch_size":16,"num_workers":4}, **args.train_dataloader)
@@ -311,4 +310,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #example  py spectrogram.py -audio_folder VD
+    #python spectrogram.py -audio_folder VD
