@@ -84,7 +84,7 @@ class WavPreprocessing:
                 af = f"{audio_folder}/{af}"
                 sound = AudioSegment.from_file(af)
                 sound = sound.set_channels(1)
-                sound.export(af, format="wav")
+                sound.export(af.replace('.flac', '.wav').replace('.mp3', '.wav'), format="wav")
         logger.info(f"audios in {audio_folder} have been converted from stereo to mono")
 
 def argparser():
