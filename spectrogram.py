@@ -14,6 +14,7 @@ from nemo.collections.common.tokenizers.text_to_speech.tts_tokenizers import Eng
 from tqdm import tqdm
 
 from modify_config import change_configuration
+
 from helpers import get_logger
 logger = get_logger(__file__.split('.')[0])
 
@@ -88,59 +89,77 @@ class ModifySpectrogramConfig:
     def create_manifest_files(
             self,
             audio_folder: str="",
-            librispeech: bool=False,
-            speaker_id: int=None,
             manifest_folder: str="",
             manifest_name: str="",
-        ) -> None:
+            mode: str="default",
+            speaker_id: int=0,
+        ):
+        def _create_audio_dict(fpath, txt_dict, min_duration, max_duration, sr, audio_dicts):
+            duration = librosa.get_duration(filename=fpath)
+            ad = {
+                "audio_filepath": fpath,
+                "duration": duration,
+                **txt_dict,
+            }
+            if min_duration > duration:
+                min_duration = duration
+            if max_duration < duration:
+                max_duration = duration
+            sr.append(librosa.get_samplerate(fpath))
+            audio_dicts.append(ad)
+            return sr, audio_dicts, min_duration, max_duration
+
+        if mode == "librispeech" and not speaker_id:
+            raise ValueError("mode librispeech requires speaker_id")
+        
         manifest_folder = manifest_folder or self.manifest_folder
         manifest_name = manifest_name or self.manifest_name
         audio_folder = audio_folder or self.audio_folder
-
-        if librispeech:
-            assert speaker_id, "librispeech audios require speaker_id"
         
         audio_dicts = []
         sr = []
         min_duration = 1000
         max_duration = 0
         all_files = os.listdir(audio_folder)
+
         for a in all_files:
-            if (not librispeech and a.endswith('.wav')) or (librispeech and a.endswith('.wav') and a.startswith(speaker_id)):
-                fpath = f"{audio_folder}/{a}"
-                duration = librosa.get_duration(filename=fpath)
-                if librispeech:
-                    txt = {
-                        "text": ".original.txt",
-                        "normalized_text": ".normalized.txt",
-                    }
-                else:
+            fpath = f"{audio_folder}/{a}"
+            if mode == "default":
+                if a.endswith('.wav'):
+                    ad = {}
                     txt = {
                         "text": ".txt"
                     }
+                    for k, ext in txt.items():
+                        with open(fpath.replace('.wav', ext)) as f:
+                            ad[k] = f.read()
+                    sr, audio_dicts, min_duration, max_duration = _create_audio_dict(fpath, ad, min_duration, max_duration, sr, audio_dicts)
+            elif mode == 'librispeech':
+                if a.startswith(f'{speaker_id}-') and a.endswith('.txt'):
+                    print("pass2")
+                    with open(fpath) as f:
+                        lines = f.readlines()
 
-                ad = {
-                    "audio_filepath": fpath,
-                    "duration": duration,
-                }
-                for k, ext in txt.items():
-                    with open(fpath.replace('.wav', ext)) as f:
-                        ad[k] = f.read()
-
-                if min_duration > duration:
-                    min_duration = duration
-                if max_duration < duration:
-                    max_duration = duration
-
-                sr.append(librosa.get_samplerate(fpath))
-                audio_dicts.append(ad)
-
+                    for line in lines:
+                        line = line.split(" ")
+                        entry_path = f"{audio_folder}/{line.pop(0)}.wav"
+                        td = {
+                            "text": " ".join(line).replace('\n', '').lower()
+                        }
+                        sr, audio_dicts, min_duration, max_duration = _create_audio_dict(entry_path, td, min_duration, max_duration, sr, audio_dicts)
+            else:
+                assert False, f"{mode} is not recognized. only mode librispeech and default are recognized"
+        
         audio_dicts_val = audio_dicts.copy()
         audio_dicts_train = []
         for i in range(int(len(audio_dicts)*0.9)):
             audio_dicts_train.append(audio_dicts_val.pop())
 
-        self.out["sample_rate"] = int(sum(sr)/len(sr))
+        try:
+            self.out["sample_rate"] = int(sum(sr)/len(sr))
+        except ZeroDivisionError:
+            raise ValueError("no audio files found were found")
+        
         self.out["max_duration"] = max_duration
         self.out["min_duration"] = min_duration
 
@@ -247,13 +266,14 @@ def argparser():
     parser.add_argument('-remove_sup_data', type=bool, default=False)
     parser.add_argument('-model_kwargs', type=json.loads, default={})
     parser.add_argument('-default_sr', type=bool, default=True)
-    parser.add_argument('-librispeech', type=bool, default=False)
-    parser.add_argument('-speaker_id', type=int)
     parser.add_argument('-base_configs', type=json.loads, default={})
-    args = parser.parse_args()
+    parser.add_argument('-mode', type=str, choices=['default', 'librispeech'], default='default')
+    parser.add_argument('-speaker_id', type=str, default="")
     
-    if args.librispeech and not args.speaker_id:
-        parser.error('librispeech audio requires speaker_id to be given')
+    args = parser.parse_args()
+
+    if args.mode == 'librispeech' and not args.speaker_id:
+        parser.error("mode librispeech requires speaker_id")
     return args
 
 def main():
@@ -274,9 +294,9 @@ def main():
     remove_sup_data = args.remove_sup_data
     model_kwargs = dict({"optim":{"name":"adam","lr":2e-4}}, **args.model_kwargs)
     default_sr = args.default_sr
-    librispeech = args.librispeech
-    speaker_id = args.speaker_id
     base_configs = args.base_configs
+    mode=args.mode
+    speaker_id=args.speaker_id
     
     msc = ModifySpectrogramConfig(
         audio_folder,
@@ -284,11 +304,7 @@ def main():
         sup_data_root,
         text_normalizer_call_kwargs,
     )
-    
-    if librispeech:
-        msc.create_manifest_files(librispeech=True, speaker_id=speaker_id)
-    else:
-        msc.create_manifest_files()
+    msc.create_manifest_files(mode=mode, speaker_id=speaker_id)
     
     if default_sr:
         msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data, sample_rate=22050)

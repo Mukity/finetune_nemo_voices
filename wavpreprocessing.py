@@ -1,5 +1,6 @@
 import os
 import shutil
+import stat
 import argparse
 
 from pydub import AudioSegment
@@ -79,14 +80,33 @@ class WavPreprocessing:
         audio_folder = audio_folder or self.audio_folder
         assert audio_folder, "Audio folder must be provided"
         audio_list = os.listdir(audio_folder)
+        non_wav = 0
         for af in audio_list:
-            if af.endswith('.wav') or af.endswith('.flac') or af.endswith('.mp3'):
+            if af.endswith(".flac") or af.endswith(".mp3"):
+                self.convert_to_wav(f"{audio_folder}/{af}")
+                non_wav+=1
+
+            if af.endswith('.wav'):
                 af = f"{audio_folder}/{af}"
                 sound = AudioSegment.from_file(af)
                 sound = sound.set_channels(1)
-                sound.export(af.replace('.flac', '.wav').replace('.mp3', '.wav'), format="wav")
+                sound.export(af, format="wav")
+
+        if non_wav:
+            logger.info(f"audios in {audio_folder} have been converted from stereo to mono")
+            logger.info(f"{non_wav} files converted to wav")
+            return
         logger.info(f"audios in {audio_folder} have been converted from stereo to mono")
 
+    def convert_to_wav(self, audio_file):
+        f_name, f_ext = os.path.splitext(audio_file)
+        wav_file = f"{f_name}.wav"
+        flac_tmp_audio_data = AudioSegment.from_file(audio_file, f_ext[1:])
+        flac_tmp_audio_data.export(wav_file, format="wav")
+        os.chmod(audio_file, stat.S_IWRITE)
+        os.remove(audio_file)
+    
+        
 def argparser():
     parser = argparse.ArgumentParser(
         prog="wav preprocessing",
