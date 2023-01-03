@@ -129,8 +129,8 @@ def main():
     manifest_folder = args.manifest_folder
     config_path = args.config_path
     init_from = args.init_from
-    model_params = {**{}, **args.model_params}
-    trainer = {**{"check_val_every_n_epoch":10,"max_steps":1000}, **args.trainer}
+    model_params = {**{"max_steps":1000}, **args.model_params}
+    trainer = {**{"check_val_every_n_epoch":10, "log_every_n_steps": 10}, **args.trainer}
     exp_manager = args.exp_manager
     train_dataset = {**{"min_duration":0,"max_duration":100,"sample_rate":sample_rate}, **args.train_dataset}
     train_dataloader = {**{"batch_size":16,"num_workers":4}, **args.train_dataloader}
