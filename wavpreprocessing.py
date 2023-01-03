@@ -80,9 +80,9 @@ class WavPreprocessing:
         assert audio_folder, "Audio folder must be provided"
         audio_list = os.listdir(audio_folder)
         for af in audio_list:
-            if af.endswith('.wav'):
+            if af.endswith('.wav') or af.endswith('.flac') or af.endswith('.mp3'):
                 af = f"{audio_folder}/{af}"
-                sound = AudioSegment.from_wav(af)
+                sound = AudioSegment.from_file(af)
                 sound = sound.set_channels(1)
                 sound.export(af, format="wav")
         logger.info(f"audios in {audio_folder} have been converted from stereo to mono")
