@@ -105,7 +105,7 @@ class ModifyVocoderConfig:
 def argparser():
     parser = argparse.ArgumentParser(description="modify argument for vocoder")
     parser.add_argument('-audio_folder', required=True, type=str)
-    parser.add_argument('-spec_model', required=True, type=str)
+    parser.add_argument('-spec_model', required=False, type=str, default='tts_en_fastpitch')
     parser.add_argument('-sample_rate', required=False, type=int, default=22050)
     parser.add_argument('-manifest_folder', type=str, default='')
     parser.add_argument('-config_path', default='', type=str)
@@ -118,6 +118,7 @@ def argparser():
     parser.add_argument('-val_dataset', default={}, type=json.loads)
     parser.add_argument('-val_dataloader', default={}, type=json.loads)
     parser.add_argument('-model_kwargs', default={}, type=json.loads)
+    parser.add_argument('-base_configs', default={}, type=json.loads)
     return parser.parse_args()
 
 def main():
@@ -136,10 +137,11 @@ def main():
     val_dataset = {**{"min_duration":0,"max_duration":100,"sample_rate":sample_rate}, **args.val_dataset}
     val_dataloader = {**{"batch_size":16,"num_workers":4}, **args.val_dataloader}
     model_kwargs = {**{"optim":{"lr": 0.00001}}, **args.model_kwargs}
+    base_configs = args.base_configs
 
     mvc = ModifyVocoderConfig(audio_folder, spec_model, manifest_folder)
     mvc.make_manifests()
-    base_dict = mvc.out
+    base_dict = {**base_configs, **mvc.out}
     base_dict['sample_rate'] = sample_rate
 
     cfg = change_configuration(
@@ -161,4 +163,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #python vocoder.py -audio_folder VD -spec_model tts_en_fastpitch
+    #python vocoder.py -audio_folder VD 

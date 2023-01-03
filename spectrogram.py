@@ -249,11 +249,12 @@ def argparser():
     parser.add_argument('-default_sr', type=bool, default=True)
     parser.add_argument('-librispeech', type=bool, default=False)
     parser.add_argument('-speaker_id', type=int)
+    parser.add_argument('-base_configs', type=json.loads, default={})
     args = parser.parse_args()
     
     if args.librispeech and not args.speaker_id:
         parser.error('librispeech audio requires speaker_id to be given')
-    return 
+    return args
 
 def main():
     args = argparser()
@@ -275,6 +276,7 @@ def main():
     default_sr = args.default_sr
     librispeech = args.librispeech
     speaker_id = args.speaker_id
+    base_configs = args.base_configs
     
     msc = ModifySpectrogramConfig(
         audio_folder,
@@ -293,7 +295,7 @@ def main():
     else:
         msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data)
 
-    base_keys = msc.out
+    base_keys = {**base_configs, **msc.out}
     max_duration = base_keys.pop('max_duration')
     min_duration = base_keys.pop('min_duration')
     logger.info(base_keys)
