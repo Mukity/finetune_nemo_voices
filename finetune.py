@@ -1,3 +1,6 @@
+import os
+import shutil
+
 import pytorch_lightning as pl
 
 from nemo.utils.exp_manager import exp_manager
@@ -31,11 +34,30 @@ def hifigan_finetune(cfg):
     model.maybe_init_from_pretrained_checkpoint(cfg=cfg)
     trainer.fit(model)
 
+def move_last_checkpoint(cfg, prefix=None):
+    base_dir = f"{cfg.exp_manager.exp_dir}/{cfg.name}"
+    model_dir = f"{base_dir}/{os.listdir(base_dir)[-1]}"
+    time = os.listdir(model_dir)[-1]
+    time_dir = f'{model_dir}/{time}'
+    checkpoint_dir = f"{time_dir}/checkpoints"
+    last_ckpt = [a for a in os.listdir(checkpoint_dir) if a.endswith('-last.ckpt')][0]
+    ckpt_path = f"{checkpoint_dir}/{last_ckpt}"
+    if prefix:
+        shutil.move(ckpt_path, f'{model_dir}/{prefix}_{last_ckpt}')
+    else:
+        shutil.move(ckpt_path, f'{model_dir}/{time}_{last_ckpt}')
+
+    shutil.rmtree(time_dir)
+    logger.info("last checkpoint moved from {ckpt_path} to {model_dir}/{time}_{last_ckpt}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Finetuning options")
     parser.add_argument("-config_folder", type=str, default="config")
     parser.add_argument("-config_name", type=str, required=True)
     parser.add_argument("-mode", type=str, choices=['specgen', 'vocoder'], required=True)
+    parser.add_argument("-move_last_ckpt", type=bool, default=True)
+    parser.add_argument("-checkpoint_prefix", type=str)
     args = parser.parse_args()
 
     conf_path = f"{args.config_folder}/{args.config_name}.yaml"
@@ -47,6 +69,9 @@ def main():
     else:
         logger.info("finetuning the hifigan model")
         hifigan_finetune(conf_cfg)
+
+    if args.move_last_ckpt:
+        move_last_checkpoint(conf_cfg, args.checkpoint_prefix)
 
 if __name__=="__main__":
     main()
