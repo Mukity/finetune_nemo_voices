@@ -40,7 +40,7 @@ def move_last_checkpoint(cfg, prefix=None):
     time = os.listdir(model_dir)[-1]
     time_dir = f'{model_dir}/{time}'
     checkpoint_dir = f"{time_dir}/checkpoints"
-    last_ckpt = [a for a in checkpoint_dir if a.endswith('-last.ckpt')][0]
+    last_ckpt = [a for a in os.listdir(checkpoint_dir) if a.endswith('-last.ckpt')][0]
     ckpt_path = f"{checkpoint_dir}/{last_ckpt}"
     if prefix:
         shutil.move(ckpt_path, f'{model_dir}/{prefix}_{last_ckpt}')
