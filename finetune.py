@@ -49,7 +49,7 @@ def move_last_checkpoint(cfg, prefix=None):
     
     shutil.move(ckpt_path, dest)
     shutil.rmtree(time_dir)
-    logger.info("last checkpoint moved from {ckpt_path} to {base_dir}/{time}_{last_ckpt}")
+    logger.info(f"last checkpoint moved from {ckpt_path} to {dest}")
 
 
 def main():
