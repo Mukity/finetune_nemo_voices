@@ -36,19 +36,20 @@ def hifigan_finetune(cfg):
 
 def move_last_checkpoint(cfg, prefix=None):
     base_dir = f"{cfg.exp_manager.exp_dir}/{cfg.name}"
-    model_dir = f"{base_dir}/{os.listdir(base_dir)[-1]}"
-    time = os.listdir(model_dir)[-1]
-    time_dir = f'{model_dir}/{time}'
+    time=os.listdir(base_dir)[-1]
+    time_dir = f"{base_dir}/{time}"
     checkpoint_dir = f"{time_dir}/checkpoints"
     last_ckpt = [a for a in os.listdir(checkpoint_dir) if a.endswith('-last.ckpt')][0]
     ckpt_path = f"{checkpoint_dir}/{last_ckpt}"
-    if prefix:
-        shutil.move(ckpt_path, f'{model_dir}/{prefix}_{last_ckpt}')
-    else:
-        shutil.move(ckpt_path, f'{model_dir}/{time}_{last_ckpt}')
 
+    if prefix:
+        dest = f'{base_dir}/{prefix}_{last_ckpt}'    
+    else:
+        dest = f'{base_dir}/{time}_{last_ckpt}'
+    
+    shutil.move(ckpt_path, dest)
     shutil.rmtree(time_dir)
-    logger.info("last checkpoint moved from {ckpt_path} to {model_dir}/{time}_{last_ckpt}")
+    logger.info("last checkpoint moved from {ckpt_path} to {base_dir}/{time}_{last_ckpt}")
 
 
 def main():
