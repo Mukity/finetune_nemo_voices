@@ -285,7 +285,7 @@ def main():
     text_normalizer_call_kwargs = args.text_normalizer_call_kwargs
     init_from = args.init_from
     model_params = dict({"n_speakers":1}, **args.model_params)
-    trainer = dict({"devices":1,"strategy":None,"max_steps":1000,"check_val_every_n_epoch":10,"log_every_n_steps":10}, **args.trainer)
+    trainer = dict({"devices":1,"strategy":None,"max_steps":1000,"check_val_every_n_epoch":4,"log_every_n_steps":4}, **args.trainer)
     exp_manager = args.exp_manager
     train_dataset = args.train_dataset
     train_dataloader = dict({"batch_size":16,"num_workers":4}, **args.train_dataloader)
