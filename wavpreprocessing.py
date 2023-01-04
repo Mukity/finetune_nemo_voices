@@ -83,7 +83,7 @@ class WavPreprocessing:
         non_wav = 0
         for af in audio_list:
             if af.endswith(".flac") or af.endswith(".mp3"):
-                self.convert_to_wav(f"{audio_folder}/{af}")
+                self._convert_to_wav(f"{audio_folder}/{af}")
                 non_wav+=1
 
             if af.endswith('.wav'):
@@ -98,7 +98,7 @@ class WavPreprocessing:
             return
         logger.info(f"audios in {audio_folder} have been converted from stereo to mono")
 
-    def convert_to_wav(self, audio_file):
+    def _convert_to_wav(self, audio_file):
         f_name, f_ext = os.path.splitext(audio_file)
         wav_file = f"{f_name}.wav"
         flac_tmp_audio_data = AudioSegment.from_file(audio_file, f_ext[1:])
