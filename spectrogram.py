@@ -93,6 +93,7 @@ class ModifySpectrogramConfig:
             manifest_name: str="",
             mode: str="default",
             speaker_id: int=0,
+            test: bool= False,
         ):
         def _create_audio_dict(fpath, txt_dict, min_duration, max_duration, sr, audio_dicts):
             duration = librosa.get_duration(filename=fpath)
@@ -155,6 +156,11 @@ class ModifySpectrogramConfig:
         for i in range(int(len(audio_dicts)*0.9)):
             audio_dicts_train.append(audio_dicts_val.pop())
 
+        audio_dicts_test = []
+        if test:
+            for i in range(int(len(audio_dicts_val)*0.3)):
+                audio_dicts_test.append(audio_dicts_val.pop())
+
         try:
             self.out["sample_rate"] = int(sum(sr)/len(sr))
         except ZeroDivisionError:
@@ -163,7 +169,11 @@ class ModifySpectrogramConfig:
         self.out["max_duration"] = max_duration
         self.out["min_duration"] = min_duration
 
-        extensions = ['.json', '_val.json', '_train.json']  
+        if test:
+            extensions = ['.json', '_val.json', '_train.json', '_test.json']  
+        else:
+            extensions = ['.json', '_val.json', '_train.json']  
+
         for i, ext in enumerate(extensions):
             mpath = f"{manifest_folder}/{manifest_name}{ext}"
             if i == 0:
@@ -171,9 +181,14 @@ class ModifySpectrogramConfig:
             elif i == 1:
                 dicts = audio_dicts_val
                 self.out['validation_datasets'] = mpath
-            else:
+            elif i == 2:
                 dicts = audio_dicts_train
                 self.out['train_dataset'] = mpath
+            else:
+                try:
+                    dicts = audio_dicts_test
+                except IndexError:
+                    pass
             with open(mpath, 'w') as f:
                 for d in dicts:
                     f.write(json.dumps(d))
@@ -269,6 +284,7 @@ def argparser():
     parser.add_argument('-base_configs', type=json.loads, default={})
     parser.add_argument('-mode', type=str, choices=['default', 'librispeech'], default='default')
     parser.add_argument('-speaker_id', type=str, default="")
+    parser.add_argument('-test_data', type=bool, default=False)
     
     args = parser.parse_args()
 
@@ -297,6 +313,7 @@ def main():
     base_configs = args.base_configs
     mode=args.mode
     speaker_id=args.speaker_id
+    test=args.test_data
     
     msc = ModifySpectrogramConfig(
         audio_folder,
@@ -304,13 +321,13 @@ def main():
         sup_data_root,
         text_normalizer_call_kwargs,
     )
-    msc.create_manifest_files(mode=mode, speaker_id=speaker_id)
+    msc.create_manifest_files(mode=mode, speaker_id=speaker_id, test=test)
     
     if default_sr:
         msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data, sample_rate=22050)
     else:
         msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data)
-
+        
     base_keys = {**base_configs, **msc.out}
     max_duration = base_keys.pop('max_duration')
     min_duration = base_keys.pop('min_duration')
