@@ -170,12 +170,12 @@ class ModifySpectrogramConfig:
         self.out["min_duration"] = min_duration
 
         if test:
-            extensions = ['.json', '_val.json', '_train.json', '_test.json']  
+            files = ['all.json', 'validation.json', 'train.json', 'test.json']  
         else:
-            extensions = ['.json', '_val.json', '_train.json']  
+            files = ['all.json', 'validation.json', 'train.json']  
 
-        for i, ext in enumerate(extensions):
-            mpath = f"{manifest_folder}/{manifest_name}{ext}"
+        for i, f in enumerate(files):
+            mpath = f"{manifest_folder}/{f}"
             if i == 0:
                 dicts = audio_dicts
             elif i == 1:
@@ -201,7 +201,6 @@ class ModifySpectrogramConfig:
         sup_data_path: str="",
         sample_rate: int=None,
         manifest_folder: str="",
-        manifest_name: str="",
         remove_sup_data: bool=True,
         **kwargs
         ) -> tuple:
@@ -213,15 +212,14 @@ class ModifySpectrogramConfig:
             sample_rate = self.out.get('sample_rate')
 
         manifest_folder = manifest_folder or self.manifest_folder
-        manifest_filename = manifest_name or self.manifest_name
     
         stages = ["train", "val"]
         stage2dl = {}
         for stage in stages:
             if stage == "train":
-                fname = f'{manifest_filename}_train.json'
+                fname = 'train.json'
             else:
-                fname = f'{manifest_filename}_val.json'
+                fname = 'validation.json'
             ds = TTSDataset(
                 manifest_filepath=f"{manifest_folder}/{fname}",
                 sample_rate=sample_rate,
@@ -327,7 +325,7 @@ def main():
         msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data, sample_rate=22050)
     else:
         msc.pre_calculate_supplementary_data(remove_sup_data=remove_sup_data)
-        
+
     base_keys = {**base_configs, **msc.out}
     max_duration = base_keys.pop('max_duration')
     min_duration = base_keys.pop('min_duration')
