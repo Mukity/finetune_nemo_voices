@@ -36,7 +36,7 @@ def hifigan_finetune(cfg):
 
 def move_last_checkpoint(cfg, prefix=None):
     base_dir = f"{cfg.exp_manager.exp_dir}/{cfg.name}"
-    time=os.listdir(base_dir)[-1]
+    time = [time for time in os.listdir(base_dir) if os.path.isdir(time)][0]
     time_dir = f"{base_dir}/{time}"
     checkpoint_dir = f"{time_dir}/checkpoints"
     last_ckpt = [a for a in os.listdir(checkpoint_dir) if a.endswith('-last.ckpt')][0]
