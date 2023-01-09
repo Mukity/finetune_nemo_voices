@@ -34,7 +34,7 @@ def hifigan_finetune(cfg):
     model.maybe_init_from_pretrained_checkpoint(cfg=cfg)
     trainer.fit(model)
 
-def move_last_checkpoint(cfg, prefix=None):
+def move_last_checkpoint(cfg, name=None):
     base_dir = f"{cfg.exp_manager.exp_dir}/{cfg.name}"
     base_dir_files = sorted(os.listdir(base_dir), reverse=True)
     for time in base_dir_files:
@@ -48,8 +48,8 @@ def move_last_checkpoint(cfg, prefix=None):
         logger.warning(f"{time_dir} is not a directory")
         return
     ckpt_path = f"{checkpoint_dir}/{last_ckpt}"
-    if prefix:
-        dest = f'{base_dir}/{prefix}_{last_ckpt}'
+    if name:
+        dest = f'{base_dir}/{name}'
     else:
         dest = f'{base_dir}/{time}_{last_ckpt}'
     shutil.move(ckpt_path, dest)
@@ -60,11 +60,10 @@ def move_last_checkpoint(cfg, prefix=None):
 def main():
     parser = argparse.ArgumentParser(description="Finetuning options")
     parser.add_argument("-config_name", type=str, required=True)
-    #parser.add_argument("-audio_folder", type=str, required=True)
     parser.add_argument("-config_folder", type=str, default="config")
     parser.add_argument("-mode", type=str, choices=['specgen', 'vocoder'], required=True)
     parser.add_argument("-move_last_ckpt", type=bool, default=True)
-    parser.add_argument("-checkpoint_prefix", type=str)
+    parser.add_argument("-checkpoint_name", type=str)
     args = parser.parse_args()
 
     conf_name = args.config_name
@@ -82,7 +81,7 @@ def main():
         hifigan_finetune(conf_cfg)
 
     if args.move_last_ckpt:
-        move_last_checkpoint(conf_cfg, args.checkpoint_prefix)
+        move_last_checkpoint(conf_cfg, args.checkpoint_name)
 
 if __name__=="__main__":
     main()
