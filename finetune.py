@@ -34,19 +34,25 @@ def hifigan_finetune(cfg):
     model.maybe_init_from_pretrained_checkpoint(cfg=cfg)
     trainer.fit(model)
 
-def move_last_checkpoint(cfg, prefix=None):
-    base_dir = f"{cfg.exp_manager.exp_dir}/{cfg.name}"
-    time = [time for time in os.listdir(base_dir) if os.path.isdir(time)][0]
+def move_last_checkpoint(cfg, audio_folder, prefix=None):
+    base_dir = f"{cfg.exp_manager.exp_dir}/{audio_folder}/{cfg.name}"
+    base_dir_files = sorted(os.listdir(base_dir), reverse=True)
+    for time in base_dir_files:
+        if os.path.isdir(f"{base_dir}/{time}"):
+           break
+    #time = [time for time in os.listdir(base_dir) if os.path.isdir(time)][0]
     time_dir = f"{base_dir}/{time}"
     checkpoint_dir = f"{time_dir}/checkpoints"
-    last_ckpt = [a for a in os.listdir(checkpoint_dir) if a.endswith('-last.ckpt')][0]
+    try:
+        last_ckpt = [a for a in os.listdir(checkpoint_dir) if a.endswith('-last.ckpt')][0]
+    except NotADirectoryError:
+        logger.warning(f"{time_dir} is not a directory")
+        return
     ckpt_path = f"{checkpoint_dir}/{last_ckpt}"
-
     if prefix:
-        dest = f'{base_dir}/{prefix}_{last_ckpt}'    
+        dest = f'{base_dir}/{prefix}_{last_ckpt}'
     else:
         dest = f'{base_dir}/{time}_{last_ckpt}'
-    
     shutil.move(ckpt_path, dest)
     shutil.rmtree(time_dir)
     logger.info(f"last checkpoint moved from {ckpt_path} to {dest}")
@@ -54,8 +60,9 @@ def move_last_checkpoint(cfg, prefix=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Finetuning options")
-    parser.add_argument("-config_folder", type=str, default="config")
     parser.add_argument("-config_name", type=str, required=True)
+    parser.add_argument("-audio_folder", type=str, required=True)
+    parser.add_argument("-config_folder", type=str, default="config")
     parser.add_argument("-mode", type=str, choices=['specgen', 'vocoder'], required=True)
     parser.add_argument("-move_last_ckpt", type=bool, default=True)
     parser.add_argument("-checkpoint_prefix", type=str)
@@ -72,7 +79,7 @@ def main():
         hifigan_finetune(conf_cfg)
 
     if args.move_last_ckpt:
-        move_last_checkpoint(conf_cfg, args.checkpoint_prefix)
+        move_last_checkpoint(conf_cfg, args.audio_folder, args.checkpoint_prefix)
 
 if __name__=="__main__":
     main()
