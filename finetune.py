@@ -68,7 +68,9 @@ def main():
     parser.add_argument("-checkpoint_prefix", type=str)
     args = parser.parse_args()
 
-    conf_path = f"{args.config_folder}/{args.config_name}.yaml"
+    conf_name = args.config_name
+    if not conf_name.endswith(".yaml"):
+        conf_path = f"{args.config_folder}/{args.config_name}.yaml"
     conf_cfg = load_yaml(conf_path)
 
     if args.mode == 'specgen':
