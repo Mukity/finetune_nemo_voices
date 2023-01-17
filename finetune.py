@@ -49,7 +49,7 @@ def move_last_checkpoint(cfg, name=None):
         return
     ckpt_path = f"{checkpoint_dir}/{last_ckpt}"
     if name:
-        dest = f'{base_dir}/{name}'
+        dest = f'{base_dir}/{name}.ckpt'
     else:
         dest = f'{base_dir}/{time}_{last_ckpt}'
     shutil.move(ckpt_path, dest)

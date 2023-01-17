@@ -22,8 +22,8 @@ class ModifyVocoderConfig:
         self.manifest_folder = manifest_folder or f"manifests/{manifest_name}"
         self.manifest_name = manifest_name
 
-        manifests = ['train', 'val']
-        self.manifest_names = [f"{self.manifest_name}_{m}.json" for m in manifests]
+        manifests = ['train', 'validation']
+        self.manifest_names = [f"{m}.json" for m in manifests]
         self.manifest_paths = [f"{self.manifest_folder}/{f}" for f in self.manifest_names]
         self.out = {}
 

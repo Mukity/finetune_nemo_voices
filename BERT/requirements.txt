@@ -1,6 +1,0 @@
-tensorflow==2.7
-seqeval==0.0.5
-nltk==3.4.5
-Flask==1.1.1
-Flask-Cors==3.0.8
-fastprogress==0.1.21
