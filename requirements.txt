@@ -2,3 +2,4 @@ nemo_toolkit[all]==1.13.0
 wget==3.2
 pynini==2.1.4
 soundfile==0.11.0
+spectrum==0.8.1
